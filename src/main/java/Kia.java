@@ -52,7 +52,7 @@ public class Kia {
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid task number.");
                 }
-            } else if (command.startsWith("unmark ")){
+            } else if (command.startsWith("unmark ")) {
                 String taskNumberText = command.substring("unmark ".length()).trim();
                 try {
                     int taskNumber = Integer.parseInt(taskNumberText);
@@ -68,12 +68,62 @@ public class Kia {
                     System.out.println("Invalid task number.");
                 }
             } else {
-                tasks[taskCount] = new Task(command);
-                taskCount++;
-                System.out.println("added: " + command);
+                Task newTask = createTask(command);
+                if (newTask == null) {
+                    System.out.println("I don't understand that command.");
+                } else if (taskCount >= tasks.length) {
+                    System.out.println("Your task list is full.");
+                } else {
+                    tasks[taskCount] = newTask;
+                    taskCount++;
+                    System.out.println("Got it. I've added this task:");
+                    System.out.println("  " + newTask);
+                    String taskWord = taskCount == 1 ? "task" : "tasks";
+                    System.out.println("Now you have " + taskCount + " " + taskWord + " in the list.");
+                }
             }
 
             System.out.println(separator);
         }
+    }
+
+    /**
+     * Parses a task command into the appropriate task subtype.
+     *
+     * @param command the command entered by the user
+     * @return a new task, or {@code null} when the command is malformed or unknown
+     */
+    private static Task createTask(String command) {
+        if (command.startsWith("todo ")) {
+            String description = command.substring("todo ".length()).trim();
+            return description.isEmpty() ? null : new Todo(description);
+        }
+
+        if (command.startsWith("deadline ")) {
+            String details = command.substring("deadline ".length()).trim();
+            int byIndex = details.indexOf(" /by ");
+            if (byIndex < 0) {
+                return null;
+            }
+            String description = details.substring(0, byIndex).trim();
+            String by = details.substring(byIndex + " /by ".length()).trim();
+            return description.isEmpty() || by.isEmpty() ? null : new Deadline(description, by);
+        }
+
+        if (command.startsWith("event ")) {
+            String details = command.substring("event ".length()).trim();
+            int fromIndex = details.indexOf(" /from ");
+            int toIndex = fromIndex < 0 ? -1 : details.indexOf(" /to ", fromIndex + " /from ".length());
+            if (fromIndex < 0 || toIndex < 0) {
+                return null;
+            }
+            String description = details.substring(0, fromIndex).trim();
+            String from = details.substring(fromIndex + " /from ".length(), toIndex).trim();
+            String to = details.substring(toIndex + " /to ".length()).trim();
+            return description.isEmpty() || from.isEmpty() || to.isEmpty()
+                    ? null : new Event(description, from, to);
+        }
+
+        return null;
     }
 }

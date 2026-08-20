@@ -13,7 +13,7 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    1. If there are any further prompts, accept the defaults.
 1. Configure the project to use **JDK 25** (not other versions) as explained in [here](https://www.jetbrains.com/help/idea/sdk.html#set-up-jdk).<br>
    In the same dialog, set the **Project language level** field to the `SDK default` option.
-1. After that, locate the `src/main/java/Kia.java` file, right-click it, and choose `Run Kia.main()` (if the code editor is showing compile errors, try restarting the IDE). If the setup is correct, Kia will greet you, store entered text in memory, and exit when you enter `bye`:
+1. After that, locate the `src/main/java/Kia.java` file, right-click it, and choose `Run Kia.main()` (if the code editor is showing compile errors, try restarting the IDE). If the setup is correct, Kia will support to-dos, deadlines, events, and task completion in memory, and exit when you enter `bye`:
    ```
    ____________________________________________________________
    ██╗  ██╗██╗ █████╗
@@ -27,32 +27,33 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    ____________________________________________________________
    ```
 
-   For example, entering `read book`, `return book`, `buy bread`, `list`, `mark 2`, and then `list` produces:
+   For example, entering `todo borrow book`, `deadline return book /by Sunday`, and `event project meeting /from Mon 2pm /to 4pm` produces:
    ```
    ____________________________________________________________
-   added: read book
+   Got it. I've added this task:
+     [T][ ] borrow book
+   Now you have 1 task in the list.
    ____________________________________________________________
    ____________________________________________________________
-   added: return book
+   Got it. I've added this task:
+     [D][ ] return book (by: Sunday)
+   Now you have 2 tasks in the list.
    ____________________________________________________________
    ____________________________________________________________
-   added: buy bread
+   Got it. I've added this task:
+     [E][ ] project meeting (from: Mon 2pm to: 4pm)
+   Now you have 3 tasks in the list.
    ____________________________________________________________
+   ____________________________________________________________
+   ```
+
+   Running `list` displays:
+   ```
    ____________________________________________________________
    Here are the tasks in your list:
-   1.[ ] read book
-   2.[ ] return book
-   3.[ ] buy bread
-   ____________________________________________________________
-   ____________________________________________________________
-   Nice! I've marked this task as done:
-     [X] return book
-   ____________________________________________________________
-   ____________________________________________________________
-   Here are the tasks in your list:
-   1.[ ] read book
-   2.[X] return book
-   3.[ ] buy bread
+   1.[T][ ] borrow book
+   2.[D][ ] return book (by: Sunday)
+   3.[E][ ] project meeting (from: Mon 2pm to: 4pm)
    ____________________________________________________________
    ```
 
