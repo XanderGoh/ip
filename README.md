@@ -57,4 +57,14 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    ____________________________________________________________
    ```
 
+   Invalid commands are reported without stopping Kia. For example:
+   ```
+   ____________________________________________________________
+   OOPS!!! The description of a todo cannot be empty.
+   ____________________________________________________________
+   ____________________________________________________________
+   OOPS!!! I'm sorry, but I don't know what that means :-(
+   ____________________________________________________________
+   ```
+
 **Warning:** Keep the `src\main\java` folder as the root folder for Java files (i.e., don't rename those folders or move Java files to another folder outside of this folder path), as this is the default location some tools (e.g., Gradle) expect to find Java files.
