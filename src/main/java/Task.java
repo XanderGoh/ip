@@ -3,7 +3,8 @@
  */
 public class Task {
     protected String description;
-    protected boolean isDone;
+    protected TaskType type;
+    protected TaskStatus status;
 
     /**
      * Creates an incomplete task with the supplied description.
@@ -11,8 +12,19 @@ public class Task {
      * @param description the text describing the task
      */
     public Task(String description) {
+        this(description, TaskType.TODO);
+    }
+
+    /**
+     * Creates an incomplete task with the supplied description and type.
+     *
+     * @param description the text describing the task
+     * @param type the type of task
+     */
+    protected Task(String description, TaskType type) {
         this.description = description;
-        this.isDone = false;
+        this.type = type;
+        this.status = TaskStatus.PENDING;
     }
 
     /**
@@ -21,21 +33,30 @@ public class Task {
      * @return {@code X} when complete, otherwise a space
      */
     public String getStatusIcon() {
-        return isDone ? "X" : " ";
+        return status.getIcon();
+    }
+
+    /**
+     * Returns the marker used to display this task's type.
+     *
+     * @return {@code T}, {@code D}, or {@code E}
+     */
+    public String getTypeIcon() {
+        return type.getIcon();
     }
 
     /**
      * Marks this task as complete.
      */
     public void markAsDone() {
-        isDone = true;
+        status = TaskStatus.DONE;
     }
 
     /**
      * Marks this task as incomplete again.
      */
     public void markAsUndone() {
-        isDone = false;
+        status = TaskStatus.PENDING;
     }
 
     /**

@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -19,8 +20,7 @@ public class Kia {
         System.out.println("What can I do for you?");
         System.out.println(separator);
 
-        Task[] tasks = new Task[100];
-        int taskCount = 0;
+        ArrayList<Task> tasks = new ArrayList<>();
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
@@ -28,38 +28,42 @@ public class Kia {
 
             boolean shouldExit = false;
             try {
-                if (command.equals("bye")) {
+                CommandType commandType = classifyCommand(command);
+                if (commandType == CommandType.BYE) {
                     System.out.println("Aww, goodbye. Hope to see you again soon!");
                     System.out.println(separator);
                     shouldExit = true;
-                } else if (command.equals("list")) {
-                    System.out.println("Here are the tasks in your list:");
-                    for (int i = 0; i < taskCount; i++) {
-                        System.out.println((i + 1) + "." + tasks[i]);
+                } else if (commandType == CommandType.LIST) {
+                    System.out.println("Here ya go! These are the tasks in your list:");
+                    for (int i = 0; i < tasks.size(); i++) {
+                        System.out.println((i + 1) + "." + tasks.get(i));
                     }
-                } else if (command.equals("mark") || command.startsWith("mark ")) {
-                    int taskNumber = parseTaskNumber(command, "mark ", taskCount);
-                    Task task = tasks[taskNumber - 1];
+                } else if (commandType == CommandType.DELETE) {
+                    int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
+                    Task removedTask = tasks.remove(taskNumber - 1);
+                    System.out.println("Okies. I've removed this task:");
+                    System.out.println("  " + removedTask);
+                    String taskWord = tasks.size() == 1 ? "task" : "tasks";
+                    System.out.println("Alright, now you have " + tasks.size() + " " + taskWord + " in the list.");
+                } else if (commandType == CommandType.MARK) {
+                    int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
+                    Task task = tasks.get(taskNumber - 1);
                     task.markAsDone();
                     System.out.println("Yay! I've marked this task as done:");
                     System.out.println("  " + task);
-                } else if (command.equals("unmark") || command.startsWith("unmark ")) {
-                    int taskNumber = parseTaskNumber(command, "unmark ", taskCount);
-                    Task task = tasks[taskNumber - 1];
+                } else if (commandType == CommandType.UNMARK) {
+                    int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
+                    Task task = tasks.get(taskNumber - 1);
                     task.markAsUndone();
                     System.out.println("Golly! I've marked this task as not done yet:");
                     System.out.println("  " + task);
                 } else {
                     Task newTask = createTask(command);
-                    if (taskCount >= tasks.length) {
-                        throw new KiaException("Uh oh! Your task list is full!");
-                    }
-                    tasks[taskCount] = newTask;
-                    taskCount++;
+                    tasks.add(newTask);
                     System.out.println("Gotcha! I've added this task:");
                     System.out.println("  " + newTask);
-                    String taskWord = taskCount == 1 ? "task" : "tasks";
-                    System.out.println("Alright, now you have " + taskCount + " " + taskWord + " in the list.");
+                    String taskWord = tasks.size() == 1 ? "task" : "tasks";
+                    System.out.println("Alright, now you have " + tasks.size() + " " + taskWord + " in the list.");
                 }
             } catch (KiaException e) {
                 System.out.println("Hey!!! " + e.getMessage());
@@ -70,6 +74,33 @@ public class Kia {
             }
             System.out.println(separator);
         }
+    }
+
+    /**
+     * Classifies a command without validating its arguments.
+     *
+     * @param command the command entered by the user
+     * @return the command category
+     */
+    private static CommandType classifyCommand(String command) {
+        if (command.equals("bye")) {
+            return CommandType.BYE;
+        } else if (command.equals("list")) {
+            return CommandType.LIST;
+        } else if (command.equals("delete") || command.startsWith("delete ")) {
+            return CommandType.DELETE;
+        } else if (command.equals("mark") || command.startsWith("mark ")) {
+            return CommandType.MARK;
+        } else if (command.equals("unmark") || command.startsWith("unmark ")) {
+            return CommandType.UNMARK;
+        } else if (command.equals("todo") || command.startsWith("todo ")) {
+            return CommandType.TODO;
+        } else if (command.equals("deadline") || command.startsWith("deadline ")) {
+            return CommandType.DEADLINE;
+        } else if (command.equals("event") || command.startsWith("event ")) {
+            return CommandType.EVENT;
+        }
+        return CommandType.UNKNOWN;
     }
 
     /**
