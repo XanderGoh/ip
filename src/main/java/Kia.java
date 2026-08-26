@@ -1,10 +1,18 @@
 import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Scanner;
 
 /**
  * Greets the user, manages in-memory tasks, and exits when the user enters {@code bye}.
  */
 public class Kia {
+    /** Relative, OS-independent location of Kia's task data. */
+    private static final Path TASK_FILE = Path.of("data", "kia.txt");
+
     public static void main(String[] args) {
         String separator = "_".repeat(60);
         String banner = "██╗  ██╗██╗ █████╗\n"
@@ -14,13 +22,19 @@ public class Kia {
                 + "██║  ██╗██║██║  ██║\n"
                 + "╚═╝  ╚═╝╚═╝╚═╝  ╚═╝";
 
+        ArrayList<Task> tasks = new ArrayList<>();
+        try {
+            loadTasks(tasks);
+        } catch (KiaException e) {
+            System.out.println("Hey!!! " + e.getMessage());
+        }
+
         System.out.println(separator);
         System.out.println(banner);
         System.out.println("Heyo! I'm Kia.");
         System.out.println("What can I do for you?");
         System.out.println(separator);
 
-        ArrayList<Task> tasks = new ArrayList<>();
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
@@ -41,6 +55,12 @@ public class Kia {
                 } else if (commandType == CommandType.DELETE) {
                     int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
                     Task removedTask = tasks.remove(taskNumber - 1);
+                    try {
+                        saveTasks(tasks);
+                    } catch (KiaException e) {
+                        tasks.add(taskNumber - 1, removedTask);
+                        throw e;
+                    }
                     System.out.println("Okies. I've removed this task:");
                     System.out.println("  " + removedTask);
                     String taskWord = tasks.size() == 1 ? "task" : "tasks";
@@ -48,18 +68,38 @@ public class Kia {
                 } else if (commandType == CommandType.MARK) {
                     int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
+                    TaskStatus previousStatus = task.status;
                     task.markAsDone();
+                    try {
+                        saveTasks(tasks);
+                    } catch (KiaException e) {
+                        task.status = previousStatus;
+                        throw e;
+                    }
                     System.out.println("Yay! I've marked this task as done:");
                     System.out.println("  " + task);
                 } else if (commandType == CommandType.UNMARK) {
                     int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
+                    TaskStatus previousStatus = task.status;
                     task.markAsUndone();
+                    try {
+                        saveTasks(tasks);
+                    } catch (KiaException e) {
+                        task.status = previousStatus;
+                        throw e;
+                    }
                     System.out.println("Golly! I've marked this task as not done yet:");
                     System.out.println("  " + task);
                 } else {
                     Task newTask = createTask(command);
                     tasks.add(newTask);
+                    try {
+                        saveTasks(tasks);
+                    } catch (KiaException e) {
+                        tasks.remove(tasks.size() - 1);
+                        throw e;
+                    }
                     System.out.println("Gotcha! I've added this task:");
                     System.out.println("  " + newTask);
                     String taskWord = tasks.size() == 1 ? "task" : "tasks";
@@ -181,5 +221,91 @@ public class Kia {
         } catch (NumberFormatException e) {
             throw new KiaException("The task number is invalid.");
         }
+    }
+
+    /**
+     * Writes the current task list to disk, creating its parent directory when needed.
+     *
+     * @param tasks tasks to persist
+     * @throws KiaException if the file cannot be written
+     */
+    private static void saveTasks(ArrayList<Task> tasks) throws KiaException {
+        try {
+            Path parent = TASK_FILE.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            ArrayList<String> records = new ArrayList<>();
+            for (Task task : tasks) {
+                records.add(task.toStorageString());
+            }
+            Files.write(TASK_FILE, records, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE);
+        } catch (IOException | SecurityException e) {
+            throw new KiaException("Unable to save tasks to disk.");
+        }
+    }
+
+    /**
+     * Loads valid task records from disk. Missing files are treated as an empty list.
+     * Invalid individual records are skipped so one corrupt line does not hide valid tasks.
+     *
+     * @param tasks destination list
+     * @throws KiaException if the data file cannot be read
+     */
+    private static void loadTasks(ArrayList<Task> tasks) throws KiaException {
+        if (!Files.exists(TASK_FILE)) {
+            return;
+        }
+        try {
+            int lineNumber = 0;
+            for (String line : Files.readAllLines(TASK_FILE, StandardCharsets.UTF_8)) {
+                lineNumber++;
+                if (line.isBlank()) {
+                    continue;
+                }
+                try {
+                    tasks.add(parseStoredTask(line));
+                } catch (KiaException e) {
+                    System.out.println("Hey!!! Skipping invalid task data on line " + lineNumber + ".");
+                }
+            }
+        } catch (IOException | SecurityException e) {
+            throw new KiaException("Unable to load tasks from disk.");
+        }
+    }
+
+    /** Parses one persisted task record. */
+    private static Task parseStoredTask(String line) throws KiaException {
+        String[] fields = line.split("\\s*\\|\\s*", -1);
+        if (fields.length < 3) {
+            throw new KiaException("A task record is incomplete.");
+        }
+        String type = fields[0].trim();
+        String status = fields[1].trim();
+        String description = fields[2].trim();
+        if (!(status.equals("0") || status.equals("1"))) {
+            throw new KiaException("A task record has an invalid status.");
+        }
+        if (description.isEmpty()) {
+            throw new KiaException("A task record has an empty description.");
+        }
+
+        Task task;
+        if (type.equals("T") && fields.length == 3) {
+            task = new Todo(description);
+        } else if (type.equals("D") && fields.length == 4 && !fields[3].trim().isEmpty()) {
+            task = new Deadline(description, fields[3].trim());
+        } else if (type.equals("E") && fields.length == 5
+                && !fields[3].trim().isEmpty() && !fields[4].trim().isEmpty()) {
+            task = new Event(description, fields[3].trim(), fields[4].trim());
+        } else {
+            throw new KiaException("A task record has an invalid format.");
+        }
+        if (status.equals("1")) {
+            task.markAsDone();
+        }
+        return task;
     }
 }

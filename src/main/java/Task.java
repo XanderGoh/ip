@@ -68,4 +68,14 @@ public class Task {
     public String toString() {
         return "[" + getStatusIcon() + "] " + description;
     }
+
+    /**
+     * Serialises this task using the compact on-disk format used by Kia.
+     *
+     * @return a pipe-delimited task record
+     */
+    public String toStorageString() {
+        String done = status == TaskStatus.DONE ? "1" : "0";
+        return type.getIcon() + " | " + done + " | " + description;
+    }
 }

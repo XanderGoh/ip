@@ -19,4 +19,9 @@ public class Deadline extends Task {
     public String toString() {
         return "[" + getTypeIcon() + "]" + super.toString() + " (by: " + by + ")";
     }
+
+    @Override
+    public String toStorageString() {
+        return super.toStorageString() + " | " + by;
+    }
 }
