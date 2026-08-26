@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Scanner;
 
 /**
@@ -174,7 +176,11 @@ public class Kia {
             if (by.isEmpty()) {
                 throw new KiaException("The /by date or time of a deadline cannot be empty.");
             }
-            return new Deadline(description, by);
+            try {
+                return new Deadline(description, LocalDate.parse(by));
+            } catch (DateTimeParseException e) {
+                throw new KiaException("The /by date or time must use yyyy-MM-dd format.");
+            }
         }
 
         if (command.equals("event") || command.startsWith("event ")) {
@@ -255,10 +261,18 @@ public class Kia {
      * @throws KiaException if the data file cannot be read
      */
     private static void loadTasks(ArrayList<Task> tasks) throws KiaException {
-        if (!Files.exists(TASK_FILE)) {
-            return;
+        if (tasks == null) {
+            throw new KiaException("Unable to load tasks from disk.");
         }
         try {
+            if (Files.notExists(TASK_FILE)) {
+                return;
+            }
+            if (!Files.isRegularFile(TASK_FILE)) {
+                throw new KiaException("Unable to load tasks from disk.");
+            }
+
+            ArrayList<Task> loadedTasks = new ArrayList<>();
             int lineNumber = 0;
             for (String line : Files.readAllLines(TASK_FILE, StandardCharsets.UTF_8)) {
                 lineNumber++;
@@ -266,11 +280,12 @@ public class Kia {
                     continue;
                 }
                 try {
-                    tasks.add(parseStoredTask(line));
+                    loadedTasks.add(parseStoredTask(line));
                 } catch (KiaException e) {
                     System.out.println("Hey!!! Skipping invalid task data on line " + lineNumber + ".");
                 }
             }
+            tasks.addAll(loadedTasks);
         } catch (IOException | SecurityException e) {
             throw new KiaException("Unable to load tasks from disk.");
         }
@@ -278,6 +293,13 @@ public class Kia {
 
     /** Parses one persisted task record. */
     private static Task parseStoredTask(String line) throws KiaException {
+        if (line == null) {
+            throw new KiaException("A task record is incomplete.");
+        }
+        // A UTF-8 BOM can appear at the start of a file created by some editors.
+        if (!line.isEmpty() && line.charAt(0) == '\uFEFF') {
+            line = line.substring(1);
+        }
         String[] fields = line.split("\\s*\\|\\s*", -1);
         if (fields.length < 3) {
             throw new KiaException("A task record is incomplete.");
@@ -296,7 +318,11 @@ public class Kia {
         if (type.equals("T") && fields.length == 3) {
             task = new Todo(description);
         } else if (type.equals("D") && fields.length == 4 && !fields[3].trim().isEmpty()) {
-            task = new Deadline(description, fields[3].trim());
+            try {
+                task = new Deadline(description, LocalDate.parse(fields[3].trim()));
+            } catch (DateTimeParseException e) {
+                throw new KiaException("A deadline record has an invalid date.");
+            }
         } else if (type.equals("E") && fields.length == 5
                 && !fields[3].trim().isEmpty() && !fields[4].trim().isEmpty()) {
             task = new Event(description, fields[3].trim(), fields[4].trim());
