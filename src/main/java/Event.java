@@ -22,4 +22,9 @@ public class Event extends Task {
     public String toString() {
         return "[" + getTypeIcon() + "]" + super.toString() + " (from: " + from + " to: " + to + ")";
     }
+
+    @Override
+    public String toStorageString() {
+        return super.toStorageString() + " | " + from + " | " + to;
+    }
 }

@@ -15,4 +15,9 @@ public class Todo extends Task {
     public String toString() {
         return "[" + getTypeIcon() + "]" + super.toString();
     }
+
+    @Override
+    public String toStorageString() {
+        return super.toStorageString();
+    }
 }
