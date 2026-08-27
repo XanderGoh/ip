@@ -52,6 +52,9 @@ public class Kia {
                     shouldExit = exitCommand.isExit();
                 } else if (commandType == CommandType.LIST) {
                     ui.showTaskList(tasks);
+                } else if (commandType == CommandType.FIND) {
+                    String keyword = parseFindKeyword(command);
+                    ui.showMatchingTasks(tasks, keyword);
                 } else if (commandType == CommandType.DELETE) {
                     int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
                     Task removedTask = tasks.remove(taskNumber - 1);
@@ -121,6 +124,8 @@ public class Kia {
             return CommandType.LIST;
         } else if (command.equals("delete") || command.startsWith("delete ")) {
             return CommandType.DELETE;
+        } else if (command.equals("find") || command.startsWith("find ")) {
+            return CommandType.FIND;
         } else if (command.equals("mark") || command.startsWith("mark ")) {
             return CommandType.MARK;
         } else if (command.equals("unmark") || command.startsWith("unmark ")) {
@@ -194,6 +199,22 @@ public class Kia {
         }
 
         throw new KiaException("What did you do...");
+    }
+
+    /**
+     * Extracts and validates the keyword from a find command.
+     *
+     * @param command the complete find command
+     * @return the keyword to search for
+     * @throws KiaException if no keyword was supplied
+     */
+    private static String parseFindKeyword(String command) throws KiaException {
+        String keyword = command.length() <= "find ".length()
+                ? "" : command.substring("find ".length()).trim();
+        if (keyword.isEmpty()) {
+            throw new KiaException("A find command must include a keyword.");
+        }
+        return keyword;
     }
 
     /**

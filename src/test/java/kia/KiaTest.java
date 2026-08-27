@@ -23,6 +23,7 @@ public class KiaTest {
         testInterleavedValidAndInvalidCommands();
         testMalformedCommandsDoNotCreateTasks();
         testInvalidDatesDoNotCreateTasks();
+        testFindCommand();
         testByeStopsCommandProcessing();
         testTaskChangesArePersisted();
         testTasksAreLoadedOnStartup();
@@ -106,6 +107,26 @@ public class KiaTest {
 
         assertContains(output, "Hey!!! The /by date or time must use yyyy-MM-dd format. >:[");
         assertNotContains(output, "1.[D]");
+    }
+
+    /** Checks matching, no-match, and missing-keyword find commands. */
+    private static void testFindCommand() {
+        String input = String.join("\n",
+                "todo read book",
+                "deadline return book /by 2019-12-02",
+                "todo buy bread",
+                "find BOOK",
+                "find spaceship",
+                "find",
+                "bye") + "\n";
+
+        String output = runKia(input);
+
+        assertContains(output, "Here are the matching tasks in your list:");
+        assertContains(output, "1.[T][ ] read book");
+        assertContains(output, "2.[D][ ] return book (by: Dec 02 2019)");
+        assertContains(output, "Hey!!! A find command must include a keyword. >:[");
+        assertNotContains(output, "3.[T][ ] buy bread");
     }
 
     /**

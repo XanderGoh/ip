@@ -84,6 +84,21 @@ public class Ui {
         }
     }
 
+    /**
+     * Prints tasks whose descriptions contain the supplied keyword.
+     *
+     * @param tasks the tasks to search
+     * @param keyword the keyword to match
+     */
+    public void showMatchingTasks(ArrayList<Task> tasks, String keyword) {
+        System.out.println("Here are the matching tasks in your list:");
+        for (int i = 0; i < tasks.size(); i++) {
+            if (tasks.get(i).matchesDescription(keyword)) {
+                System.out.println((i + 1) + "." + tasks.get(i));
+            }
+        }
+    }
+
     /** Prints confirmation for a newly added task. */
     public void showTaskAdded(Task task, int taskCount) {
         System.out.println("Gotcha! I've added this task:");

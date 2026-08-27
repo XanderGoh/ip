@@ -1,6 +1,8 @@
 package kia.task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,32 @@ class TaskTest {
         Task task = new Task("read book");
 
         assertEquals("T", task.getTypeIcon());
+    }
+
+    /** Verifies that keyword matching ignores case and supports substrings. */
+    @Test
+    void matchesDescription_keywordMatchesIgnoringCase_returnsTrue() {
+        Task task = new Task("Read the BOOK");
+
+        assertTrue(task.matchesDescription("book"));
+        assertTrue(task.matchesDescription("READ"));
+    }
+
+    /** Verifies that an absent keyword does not match the description. */
+    @Test
+    void matchesDescription_keywordAbsent_returnsFalse() {
+        Task task = new Task("read book");
+
+        assertFalse(task.matchesDescription("bread"));
+    }
+
+    /** Verifies that null and blank keywords do not match every task. */
+    @Test
+    void matchesDescription_nullOrBlankKeyword_returnsFalse() {
+        Task task = new Task("read book");
+
+        assertFalse(task.matchesDescription(null));
+        assertFalse(task.matchesDescription("   "));
     }
 
     @Test
