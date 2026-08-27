@@ -34,8 +34,9 @@ public class Kia {
             try {
                 CommandType commandType = classifyCommand(command);
                 if (commandType == CommandType.BYE) {
-                    ui.showBye();
-                    shouldExit = true;
+                    Command exitCommand = new ExitCommand();
+                    exitCommand.execute(tasks, ui);
+                    shouldExit = exitCommand.isExit();
                 } else if (commandType == CommandType.LIST) {
                     ui.showTaskList(tasks);
                 } else if (commandType == CommandType.DELETE) {
