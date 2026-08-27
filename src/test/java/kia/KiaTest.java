@@ -123,6 +123,7 @@ public class KiaTest {
         }
     }
 
+    /** Runs Kia while retaining its data file for persistence assertions. */
     private static String runKiaKeepingFile(String input) {
         java.io.InputStream originalIn = System.in;
         PrintStream originalOut = System.out;
@@ -138,6 +139,7 @@ public class KiaTest {
         }
     }
 
+    /** Checks that add, completion, undo, and delete operations are persisted. */
     private static void testTaskChangesArePersisted() {
         clearTaskFile();
         try {
@@ -160,6 +162,7 @@ public class KiaTest {
         }
     }
 
+    /** Checks that valid records are loaded and displayed at startup. */
     private static void testTasksAreLoadedOnStartup() {
         clearTaskFile();
         try {
@@ -229,6 +232,7 @@ public class KiaTest {
         }
     }
 
+    /** Checks that a missing data file starts Kia with an empty list. */
     private static void testMissingTaskFileStartsWithEmptyList() {
         clearTaskFile();
         String output = runKiaKeepingFile("list\nbye\n");
@@ -236,6 +240,7 @@ public class KiaTest {
         assertNotContains(output, "1.[");
     }
 
+    /** Removes the test data file so each scenario starts independently. */
     private static void clearTaskFile() {
         try {
             Files.deleteIfExists(TASK_FILE);
@@ -244,20 +249,24 @@ public class KiaTest {
         }
     }
 
+    /** Asserts that captured output contains the expected text. */
     private static void assertContains(String output, String expected) {
         require(output.contains(expected), "Expected output to contain: " + expected);
     }
 
+    /** Asserts that the expected text occurs after the final task-list heading. */
     private static void assertLastContains(String output, String expected) {
         int lastList = output.lastIndexOf("Here ya go! These are the tasks in your list:");
         int lastMatch = output.lastIndexOf(expected);
         require(lastMatch > lastList, "Expected the final list to contain: " + expected);
     }
 
+    /** Asserts that captured output does not contain unexpected text. */
     private static void assertNotContains(String output, String unexpected) {
         require(!output.contains(unexpected), "Did not expect output to contain: " + unexpected);
     }
 
+    /** Raises an assertion failure when a test condition is false. */
     private static void require(boolean condition, String message) {
         if (!condition) {
             throw new AssertionError(message);

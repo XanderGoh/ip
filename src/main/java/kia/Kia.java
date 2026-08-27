@@ -1,6 +1,5 @@
 package kia;
 
-import java.util.ArrayList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 
 import kia.command.Command;
 import kia.command.CommandType;
@@ -27,6 +27,15 @@ public class Kia {
     /** Relative, OS-independent location of Kia's task data. */
     private static final Path TASK_FILE = Path.of("data", "kia.txt");
 
+    /** Creates the application entry-point object. */
+    public Kia() {
+    }
+
+    /**
+     * Starts Kia, processes commands until the user exits, and persists task changes.
+     *
+     * @param args command-line arguments, currently unused
+     */
     public static void main(String[] args) {
         Ui ui = new Ui();
 

@@ -10,10 +10,14 @@ import kia.ui.Ui;
  * A unit of work produced from a user command.
  *
  * <p>Concrete commands will progressively take over the command-specific
- * branches currently in {@link Kia}. This common contract lets the main loop
- * execute commands without knowing their individual behaviour.</p>
+ * branches currently in {@link kia.Kia}. This common contract lets the main loop
+ * execute commands without knowing their individual behavior.</p>
  */
 public abstract class Command {
+    /** Creates a command ready for execution. */
+    protected Command() {
+    }
+
     /**
      * Executes this command using the current task list and user interface.
      *

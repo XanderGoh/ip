@@ -4,8 +4,11 @@ package kia.task;
  * Represents a task and whether it has been completed.
  */
 public class Task {
+    /** Text describing the task. */
     protected String description;
+    /** Category used to format and persist the task. */
     protected TaskType type;
+    /** Current completion state. */
     protected TaskStatus status;
 
     /**
@@ -93,7 +96,7 @@ public class Task {
     }
 
     /**
-     * Serialises this task using the compact on-disk format used by Kia.
+     * Serializes this task using the compact on-disk format used by Kia.
      *
      * @return a pipe-delimited task record
      */

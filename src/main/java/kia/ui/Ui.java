@@ -10,7 +10,7 @@ import kia.task.Task;
  * Handles all console input and output for Kia.
  *
  * <p>Keeping presentation here allows the command-processing code to focus on
- * application behaviour instead of formatting messages for the user.</p>
+ * application behavior instead of formatting messages for the user.</p>
  */
 public class Ui {
     private static final String SEPARATOR = "_".repeat(60);
@@ -66,17 +66,29 @@ public class Ui {
         showSeparator();
     }
 
-    /** Prints an error returned while processing a command. */
+    /**
+     * Prints an error returned while processing a command.
+     *
+     * @param exception the command error to display
+     */
     public void showError(KiaException exception) {
         System.out.println("Hey!!! " + exception.getMessage());
     }
 
-    /** Prints the loading error returned during startup. */
+    /**
+     * Prints the loading error returned during startup.
+     *
+     * @param exception the loading error to display
+     */
     public void showLoadingError(KiaException exception) {
         showError(exception);
     }
 
-    /** Prints all tasks with their one-based list positions. */
+    /**
+     * Prints all tasks with their one-based list positions.
+     *
+     * @param tasks the tasks to display
+     */
     public void showTaskList(ArrayList<Task> tasks) {
         System.out.println("Here ya go! These are the tasks in your list:");
         for (int i = 0; i < tasks.size(); i++) {
@@ -84,32 +96,55 @@ public class Ui {
         }
     }
 
-    /** Prints confirmation for a newly added task. */
+    /**
+     * Prints confirmation for a newly added task.
+     *
+     * @param task the newly added task
+     * @param taskCount the number of tasks after the addition
+     */
     public void showTaskAdded(Task task, int taskCount) {
         System.out.println("Gotcha! I've added this task:");
         System.out.println("  " + task);
         showTaskCount(taskCount);
     }
 
-    /** Prints confirmation for a deleted task. */
+    /**
+     * Prints confirmation for a deleted task.
+     *
+     * @param task the deleted task
+     * @param taskCount the number of tasks after the deletion
+     */
     public void showTaskDeleted(Task task, int taskCount) {
         System.out.println("Okies. I've removed this task:");
         System.out.println("  " + task);
         showTaskCount(taskCount);
     }
 
-    /** Prints confirmation that a task was marked done. */
+    /**
+     * Prints confirmation that a task was marked done.
+     *
+     * @param task the task that was marked done
+     */
     public void showTaskMarked(Task task) {
         System.out.println("Yay! I've marked this task as done:");
         System.out.println("  " + task);
     }
 
-    /** Prints confirmation that a task was marked not done. */
+    /**
+     * Prints confirmation that a task was marked not done.
+     *
+     * @param task the task that was marked not done
+     */
     public void showTaskUnmarked(Task task) {
         System.out.println("Golly! I've marked this task as not done yet:");
         System.out.println("  " + task);
     }
 
+    /**
+     * Prints the task-count confirmation using the singular or plural form.
+     *
+     * @param taskCount the number of tasks currently stored
+     */
     private void showTaskCount(int taskCount) {
         String taskWord = taskCount == 1 ? "task" : "tasks";
         System.out.println("Alright, now you have " + taskCount + " " + taskWord + " in the list.");
