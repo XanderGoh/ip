@@ -1,5 +1,7 @@
 package kia.task;
 
+import java.util.Locale;
+
 /**
  * Represents a task and whether it has been completed.
  */
@@ -48,6 +50,24 @@ public class Task {
      */
     public String getTypeIcon() {
         return type.getIcon();
+    }
+
+    /**
+     * Checks whether this task description contains a keyword.
+     *
+     * <p>The comparison ignores letter case and treats the keyword as a
+     * substring, allowing users to find partial words as well as complete
+     * words.</p>
+     *
+     * @param keyword the text to search for
+     * @return {@code true} when the keyword occurs in the description
+     */
+    public boolean matchesDescription(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return false;
+        }
+        return description.toLowerCase(Locale.ROOT)
+                .contains(keyword.trim().toLowerCase(Locale.ROOT));
     }
 
     /**

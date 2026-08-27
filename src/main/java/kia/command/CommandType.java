@@ -18,6 +18,8 @@ public enum CommandType {
     UNMARK,
     /** Deletes a task. */
     DELETE,
+    /** Searches task descriptions for a keyword. */
+    FIND,
     /** Exits the chatbot. */
     BYE,
     /** Represents an unrecognised command. */
