@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Scanner;
 
 /**
  * Greets the user, manages in-memory tasks, and exits when the user enters {@code bye}.
@@ -16,44 +15,29 @@ public class Kia {
     private static final Path TASK_FILE = Path.of("data", "kia.txt");
 
     public static void main(String[] args) {
-        String separator = "_".repeat(60);
-        String banner = "██╗  ██╗██╗ █████╗\n"
-                + "██║ ██╔╝██║██╔══██╗\n"
-                + "█████╔╝ ██║███████║\n"
-                + "██╔═██╗ ██║██╔══██║\n"
-                + "██║  ██╗██║██║  ██║\n"
-                + "╚═╝  ╚═╝╚═╝╚═╝  ╚═╝";
+        Ui ui = new Ui();
 
         ArrayList<Task> tasks = new ArrayList<>();
         try {
             loadTasks(tasks);
         } catch (KiaException e) {
-            System.out.println("Hey!!! " + e.getMessage());
+            ui.showLoadingError(e);
         }
 
-        System.out.println(separator);
-        System.out.println(banner);
-        System.out.println("Heyo! I'm Kia.");
-        System.out.println("What can I do for you?");
-        System.out.println(separator);
+        ui.showWelcome();
 
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNextLine()) {
-            String command = scanner.nextLine();
-            System.out.println(separator);
+        while (ui.hasNextCommand()) {
+            String command = ui.readCommand();
+            ui.showSeparator();
 
             boolean shouldExit = false;
             try {
                 CommandType commandType = classifyCommand(command);
                 if (commandType == CommandType.BYE) {
-                    System.out.println("Aww, goodbye. Hope to see you again soon!");
-                    System.out.println(separator);
+                    ui.showBye();
                     shouldExit = true;
                 } else if (commandType == CommandType.LIST) {
-                    System.out.println("Here ya go! These are the tasks in your list:");
-                    for (int i = 0; i < tasks.size(); i++) {
-                        System.out.println((i + 1) + "." + tasks.get(i));
-                    }
+                    ui.showTaskList(tasks);
                 } else if (commandType == CommandType.DELETE) {
                     int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
                     Task removedTask = tasks.remove(taskNumber - 1);
@@ -63,10 +47,7 @@ public class Kia {
                         tasks.add(taskNumber - 1, removedTask);
                         throw e;
                     }
-                    System.out.println("Okies. I've removed this task:");
-                    System.out.println("  " + removedTask);
-                    String taskWord = tasks.size() == 1 ? "task" : "tasks";
-                    System.out.println("Alright, now you have " + tasks.size() + " " + taskWord + " in the list.");
+                    ui.showTaskDeleted(removedTask, tasks.size());
                 } else if (commandType == CommandType.MARK) {
                     int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
@@ -78,8 +59,7 @@ public class Kia {
                         task.status = previousStatus;
                         throw e;
                     }
-                    System.out.println("Yay! I've marked this task as done:");
-                    System.out.println("  " + task);
+                    ui.showTaskMarked(task);
                 } else if (commandType == CommandType.UNMARK) {
                     int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
@@ -91,8 +71,7 @@ public class Kia {
                         task.status = previousStatus;
                         throw e;
                     }
-                    System.out.println("Golly! I've marked this task as not done yet:");
-                    System.out.println("  " + task);
+                    ui.showTaskUnmarked(task);
                 } else {
                     Task newTask = createTask(command);
                     tasks.add(newTask);
@@ -102,19 +81,16 @@ public class Kia {
                         tasks.remove(tasks.size() - 1);
                         throw e;
                     }
-                    System.out.println("Gotcha! I've added this task:");
-                    System.out.println("  " + newTask);
-                    String taskWord = tasks.size() == 1 ? "task" : "tasks";
-                    System.out.println("Alright, now you have " + tasks.size() + " " + taskWord + " in the list.");
+                    ui.showTaskAdded(newTask, tasks.size());
                 }
             } catch (KiaException e) {
-                System.out.println("Hey!!! " + e.getMessage());
+                ui.showError(e);
             }
 
             if (shouldExit) {
                 break;
             }
-            System.out.println(separator);
+            ui.showSeparator();
         }
     }
 
