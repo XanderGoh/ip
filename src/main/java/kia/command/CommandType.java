@@ -1,3 +1,5 @@
+package kia.command;
+
 /**
  * Command categories understood by Kia.
  */
