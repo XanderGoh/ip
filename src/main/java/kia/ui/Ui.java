@@ -1,5 +1,10 @@
+package kia.ui;
+
 import java.util.ArrayList;
 import java.util.Scanner;
+
+import kia.exception.KiaException;
+import kia.task.Task;
 
 /**
  * Handles all console input and output for Kia.

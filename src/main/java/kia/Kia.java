@@ -1,3 +1,5 @@
+package kia;
+
 import java.util.ArrayList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -6,6 +8,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+
+import kia.command.Command;
+import kia.command.CommandType;
+import kia.command.ExitCommand;
+import kia.exception.KiaException;
+import kia.task.Deadline;
+import kia.task.Event;
+import kia.task.Task;
+import kia.task.TaskStatus;
+import kia.task.Todo;
+import kia.ui.Ui;
 
 /**
  * Greets the user, manages in-memory tasks, and exits when the user enters {@code bye}.
@@ -52,24 +65,24 @@ public class Kia {
                 } else if (commandType == CommandType.MARK) {
                     int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
-                    TaskStatus previousStatus = task.status;
+                    TaskStatus previousStatus = task.getStatus();
                     task.markAsDone();
                     try {
                         saveTasks(tasks);
                     } catch (KiaException e) {
-                        task.status = previousStatus;
+                        task.setStatus(previousStatus);
                         throw e;
                     }
                     ui.showTaskMarked(task);
                 } else if (commandType == CommandType.UNMARK) {
                     int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
                     Task task = tasks.get(taskNumber - 1);
-                    TaskStatus previousStatus = task.status;
+                    TaskStatus previousStatus = task.getStatus();
                     task.markAsUndone();
                     try {
                         saveTasks(tasks);
                     } catch (KiaException e) {
-                        task.status = previousStatus;
+                        task.setStatus(previousStatus);
                         throw e;
                     }
                     ui.showTaskUnmarked(task);

@@ -1,3 +1,5 @@
+package kia.task;
+
 /**
  * Completion states for tasks.
  */

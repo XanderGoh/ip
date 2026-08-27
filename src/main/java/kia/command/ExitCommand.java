@@ -1,4 +1,9 @@
+package kia.command;
+
 import java.util.ArrayList;
+
+import kia.task.Task;
+import kia.ui.Ui;
 
 /** A command that says goodbye and terminates Kia's command loop. */
 public class ExitCommand extends Command {

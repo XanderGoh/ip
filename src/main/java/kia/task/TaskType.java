@@ -1,3 +1,5 @@
+package kia.task;
+
 /**
  * Supported types of tasks.
  */

@@ -1,4 +1,10 @@
+package kia.command;
+
 import java.util.ArrayList;
+
+import kia.exception.KiaException;
+import kia.task.Task;
+import kia.ui.Ui;
 
 /**
  * A unit of work produced from a user command.

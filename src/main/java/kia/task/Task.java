@@ -1,3 +1,5 @@
+package kia.task;
+
 /**
  * Represents a task and whether it has been completed.
  */
@@ -57,6 +59,27 @@ public class Task {
      */
     public void markAsUndone() {
         status = TaskStatus.PENDING;
+    }
+
+    /**
+     * Returns the current completion state.
+     *
+     * @return the task status
+     */
+    public TaskStatus getStatus() {
+        return status;
+    }
+
+    /**
+     * Restores the task to a supplied completion state.
+     *
+     * <p>This is used by the application when a persistence operation fails
+     * and an in-memory change must be rolled back.</p>
+     *
+     * @param status the status to restore
+     */
+    public void setStatus(TaskStatus status) {
+        this.status = status;
     }
 
     /**

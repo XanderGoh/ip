@@ -1,3 +1,5 @@
+package kia.exception;
+
 /**
  * Represents an error caused by invalid input to Kia.
  */
