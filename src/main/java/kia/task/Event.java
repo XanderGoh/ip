@@ -4,7 +4,9 @@ package kia.task;
  * A task with a start date or time and an end date or time.
  */
 public class Event extends Task {
+    /** Start date or time of the event. */
     protected String from;
+    /** End date or time of the event. */
     protected String to;
 
     /**
@@ -20,11 +22,21 @@ public class Event extends Task {
         this.to = to;
     }
 
+    /**
+     * Formats this event with its type, completion state, description, and time range.
+     *
+     * @return the user-facing event representation
+     */
     @Override
     public String toString() {
         return "[" + getTypeIcon() + "]" + super.toString() + " (from: " + from + " to: " + to + ")";
     }
 
+    /**
+     * Serializes this event with its start and end values for persistence.
+     *
+     * @return a pipe-delimited event record
+     */
     @Override
     public String toStorageString() {
         return super.toStorageString() + " | " + from + " | " + to;

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for task completion state transitions.
  */
 class TaskTest {
+    /** Verifies that a new task reports the pending status. */
     @Test
     void getStatusIcon_newTask_returnsPendingIcon() {
         Task task = new Task("read book");
@@ -16,6 +17,7 @@ class TaskTest {
         assertEquals(" ", task.getStatusIcon());
     }
 
+    /** Verifies that to-do tasks expose the to-do type icon. */
     @Test
     void getTypeIcon_todoTask_returnsTodoIcon() {
         Task task = new Task("read book");
@@ -23,6 +25,7 @@ class TaskTest {
         assertEquals("T", task.getTypeIcon());
     }
 
+    /** Verifies the transition from pending to done. */
     @Test
     void markAsDone_pendingTask_marksItDone() {
         Task task = new Task("read book");
@@ -33,6 +36,7 @@ class TaskTest {
         assertEquals("X", task.getStatusIcon());
     }
 
+    /** Verifies that marking an already-done task is idempotent. */
     @Test
     void markAsDone_doneTask_remainsDone() {
         Task task = new Task("read book");
@@ -44,6 +48,7 @@ class TaskTest {
         assertEquals("X", task.getStatusIcon());
     }
 
+    /** Verifies the transition from done back to pending. */
     @Test
     void markAsUndone_doneTask_marksItPending() {
         Task task = new Task("read book");
@@ -55,6 +60,7 @@ class TaskTest {
         assertEquals(" ", task.getStatusIcon());
     }
 
+    /** Verifies that unmarking an already-pending task is idempotent. */
     @Test
     void markAsUndone_pendingTask_remainsPending() {
         Task task = new Task("read book");
@@ -65,6 +71,7 @@ class TaskTest {
         assertEquals(" ", task.getStatusIcon());
     }
 
+    /** Verifies that explicit status restoration updates the task state. */
     @Test
     void setStatus_doneStatus_updatesTaskState() {
         Task task = new Task("read book");
@@ -75,6 +82,7 @@ class TaskTest {
         assertEquals("X", task.getStatusIcon());
     }
 
+    /** Verifies the pending task display format. */
     @Test
     void toString_pendingTask_includesPendingMarkerAndDescription() {
         Task task = new Task("read book");
@@ -82,6 +90,7 @@ class TaskTest {
         assertEquals("[ ] read book", task.toString());
     }
 
+    /** Verifies the completed task display format. */
     @Test
     void toString_doneTask_includesDoneMarkerAndDescription() {
         Task task = new Task("read book");
@@ -90,6 +99,7 @@ class TaskTest {
         assertEquals("[X] read book", task.toString());
     }
 
+    /** Verifies serialization of an incomplete task. */
     @Test
     void toStorageString_pendingTask_usesPendingStatusRecord() {
         Task task = new Task("read book");
@@ -97,6 +107,7 @@ class TaskTest {
         assertEquals("T | 0 | read book", task.toStorageString());
     }
 
+    /** Verifies serialization of a completed task. */
     @Test
     void toStorageString_doneTask_usesDoneStatusRecord() {
         Task task = new Task("read book");

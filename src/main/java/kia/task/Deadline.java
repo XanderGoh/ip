@@ -11,6 +11,7 @@ public class Deadline extends Task {
     private static final DateTimeFormatter DISPLAY_FORMAT =
             DateTimeFormatter.ofPattern("MMM dd yyyy", Locale.ENGLISH);
 
+    /** Date by which the task should be completed. */
     protected LocalDate by;
 
     /**
@@ -35,12 +36,22 @@ public class Deadline extends Task {
         this(description, LocalDate.parse(by));
     }
 
+    /**
+     * Formats this deadline with its type, completion state, description, and date.
+     *
+     * @return the user-facing deadline representation
+     */
     @Override
     public String toString() {
         return "[" + getTypeIcon() + "]" + super.toString()
                 + " (by: " + by.format(DISPLAY_FORMAT) + ")";
     }
 
+    /**
+     * Serializes this deadline with its ISO date for persistence.
+     *
+     * @return a pipe-delimited deadline record
+     */
     @Override
     public String toStorageString() {
         return super.toStorageString() + " | " + by;
