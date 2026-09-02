@@ -1,5 +1,6 @@
 package kia.ui;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -16,10 +17,22 @@ public class Ui {
     private static final String SEPARATOR = "_".repeat(60);
 
     private final Scanner scanner;
+    private final PrintStream output;
 
     /** Creates a UI that reads commands from standard input. */
     public Ui() {
         scanner = new Scanner(System.in);
+        output = System.out;
+    }
+
+    /**
+     * Creates a UI that writes messages to the supplied stream.
+     *
+     * @param output destination for user-facing messages
+     */
+    public Ui(PrintStream output) {
+        scanner = new Scanner(System.in);
+        this.output = output;
     }
 
     /**
@@ -49,20 +62,20 @@ public class Ui {
                 + "██║  ██╗██║██║  ██║\n"
                 + "╚═╝  ╚═╝╚═╝╚═╝  ╚═╝";
         showSeparator();
-        System.out.println(banner);
-        System.out.println("Heyo! I'm Kia.");
-        System.out.println("What can I do for you?");
+        output.println(banner);
+        output.println("Heyo! I'm Kia.");
+        output.println("What can I do for you?");
         showSeparator();
     }
 
     /** Prints the separator used between chatbot messages. */
     public void showSeparator() {
-        System.out.println(SEPARATOR);
+        output.println(SEPARATOR);
     }
 
     /** Prints the farewell message. */
     public void showBye() {
-        System.out.println("Aww, goodbye. Hope to see you again soon!");
+        output.println("Aww, goodbye. Hope to see you again soon!");
         showSeparator();
     }
 
@@ -72,7 +85,7 @@ public class Ui {
      * @param exception the command error to display
      */
     public void showError(KiaException exception) {
-        System.out.println("Hey!!! " + exception.getMessage());
+        output.println("Hey!!! " + exception.getMessage());
     }
 
     /**
@@ -90,9 +103,9 @@ public class Ui {
      * @param tasks the tasks to display
      */
     public void showTaskList(ArrayList<Task> tasks) {
-        System.out.println("Here ya go! These are the tasks in your list:");
+        output.println("Here ya go! These are the tasks in your list:");
         for (int i = 0; i < tasks.size(); i++) {
-            System.out.println((i + 1) + "." + tasks.get(i));
+            output.println((i + 1) + "." + tasks.get(i));
         }
     }
 
@@ -103,10 +116,10 @@ public class Ui {
      * @param keyword the keyword to match
      */
     public void showMatchingTasks(ArrayList<Task> tasks, String keyword) {
-        System.out.println("Here are the matching tasks in your list:");
+        output.println("Here are the matching tasks in your list:");
         for (int i = 0; i < tasks.size(); i++) {
             if (tasks.get(i).matchesDescription(keyword)) {
-                System.out.println((i + 1) + "." + tasks.get(i));
+                output.println((i + 1) + "." + tasks.get(i));
             }
         }
     }
@@ -118,8 +131,8 @@ public class Ui {
      * @param taskCount the number of tasks after the addition
      */
     public void showTaskAdded(Task task, int taskCount) {
-        System.out.println("Gotcha! I've added this task:");
-        System.out.println("  " + task);
+        output.println("Gotcha! I've added this task:");
+        output.println("  " + task);
         showTaskCount(taskCount);
     }
 
@@ -130,8 +143,8 @@ public class Ui {
      * @param taskCount the number of tasks after the deletion
      */
     public void showTaskDeleted(Task task, int taskCount) {
-        System.out.println("Okies. I've removed this task:");
-        System.out.println("  " + task);
+        output.println("Okies. I've removed this task:");
+        output.println("  " + task);
         showTaskCount(taskCount);
     }
 
@@ -141,8 +154,8 @@ public class Ui {
      * @param task the task that was marked done
      */
     public void showTaskMarked(Task task) {
-        System.out.println("Yay! I've marked this task as done:");
-        System.out.println("  " + task);
+        output.println("Yay! I've marked this task as done:");
+        output.println("  " + task);
     }
 
     /**
@@ -151,8 +164,8 @@ public class Ui {
      * @param task the task that was marked not done
      */
     public void showTaskUnmarked(Task task) {
-        System.out.println("Golly! I've marked this task as not done yet:");
-        System.out.println("  " + task);
+        output.println("Golly! I've marked this task as not done yet:");
+        output.println("  " + task);
     }
 
     /**
@@ -162,6 +175,6 @@ public class Ui {
      */
     private void showTaskCount(int taskCount) {
         String taskWord = taskCount == 1 ? "task" : "tasks";
-        System.out.println("Alright, now you have " + taskCount + " " + taskWord + " in the list.");
+        output.println("Alright, now you have " + taskCount + " " + taskWord + " in the list.");
     }
 }
