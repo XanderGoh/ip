@@ -23,6 +23,12 @@ class MainTest {
         assertEquals(Application.class, Main.class.getSuperclass());
     }
 
+    /** Verifies that the separate launcher entry point required by JavaFX exists. */
+    @Test
+    void launcher_hasMainMethod_forwardsToJavaFx() throws NoSuchMethodException {
+        assertNotNull(Launcher.class.getDeclaredMethod("main", String[].class));
+    }
+
     /** Verifies that GUI commands are processed by the chatbot logic. */
     @Test
     void getResponse_todoCommand_confirmsTask() throws Exception {
