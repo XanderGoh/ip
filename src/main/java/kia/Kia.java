@@ -1,6 +1,8 @@
 package kia;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +29,20 @@ public class Kia {
     /** Relative, OS-independent location of Kia's task data. */
     private static final Path TASK_FILE = Path.of("data", "kia.txt");
 
+    /** Tasks managed by this Kia instance. */
+    private final ArrayList<Task> tasks;
+
+    /** Startup loading failure, if the persisted data could not be read. */
+    private KiaException loadingError;
+
     /** Creates the application entry-point object. */
     public Kia() {
+        tasks = new ArrayList<>();
+        try {
+            loadTasks(tasks);
+        } catch (KiaException e) {
+            loadingError = e;
+        }
     }
 
     /**
@@ -37,13 +51,10 @@ public class Kia {
      * @param args command-line arguments, currently unused
      */
     public static void main(String[] args) {
+        Kia kia = new Kia();
         Ui ui = new Ui();
-
-        ArrayList<Task> tasks = new ArrayList<>();
-        try {
-            loadTasks(tasks);
-        } catch (KiaException e) {
-            ui.showLoadingError(e);
+        if (kia.loadingError != null) {
+            ui.showLoadingError(kia.loadingError);
         }
 
         ui.showWelcome();
@@ -54,61 +65,7 @@ public class Kia {
 
             boolean shouldExit = false;
             try {
-                CommandType commandType = classifyCommand(command);
-                if (commandType == CommandType.BYE) {
-                    Command exitCommand = new ExitCommand();
-                    exitCommand.execute(tasks, ui);
-                    shouldExit = exitCommand.isExit();
-                } else if (commandType == CommandType.LIST) {
-                    ui.showTaskList(tasks);
-                } else if (commandType == CommandType.FIND) {
-                    String keyword = parseFindKeyword(command);
-                    ui.showMatchingTasks(tasks, keyword);
-                } else if (commandType == CommandType.DELETE) {
-                    int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
-                    Task removedTask = tasks.remove(taskNumber - 1);
-                    try {
-                        saveTasks(tasks);
-                    } catch (KiaException e) {
-                        tasks.add(taskNumber - 1, removedTask);
-                        throw e;
-                    }
-                    ui.showTaskDeleted(removedTask, tasks.size());
-                } else if (commandType == CommandType.MARK) {
-                    int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
-                    Task task = tasks.get(taskNumber - 1);
-                    TaskStatus previousStatus = task.getStatus();
-                    task.markAsDone();
-                    try {
-                        saveTasks(tasks);
-                    } catch (KiaException e) {
-                        task.setStatus(previousStatus);
-                        throw e;
-                    }
-                    ui.showTaskMarked(task);
-                } else if (commandType == CommandType.UNMARK) {
-                    int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
-                    Task task = tasks.get(taskNumber - 1);
-                    TaskStatus previousStatus = task.getStatus();
-                    task.markAsUndone();
-                    try {
-                        saveTasks(tasks);
-                    } catch (KiaException e) {
-                        task.setStatus(previousStatus);
-                        throw e;
-                    }
-                    ui.showTaskUnmarked(task);
-                } else {
-                    Task newTask = createTask(command);
-                    tasks.add(newTask);
-                    try {
-                        saveTasks(tasks);
-                    } catch (KiaException e) {
-                        tasks.remove(tasks.size() - 1);
-                        throw e;
-                    }
-                    ui.showTaskAdded(newTask, tasks.size());
-                }
+                shouldExit = kia.processCommand(command, ui);
             } catch (KiaException e) {
                 ui.showError(e);
             }
@@ -118,6 +75,93 @@ public class Kia {
             }
             ui.showSeparator();
         }
+    }
+
+    /**
+     * Processes one command and captures the same response used by the console UI.
+     *
+     * @param input command entered in the GUI
+     * @return the response text, without console separators
+     */
+    public String getResponse(String input) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        Ui responseUi = new Ui(new PrintStream(output, true, StandardCharsets.UTF_8));
+        if (loadingError != null) {
+            responseUi.showLoadingError(loadingError);
+        }
+        try {
+            processCommand(input == null ? "" : input, responseUi);
+        } catch (KiaException e) {
+            responseUi.showError(e);
+        }
+        return output.toString(StandardCharsets.UTF_8).trim();
+    }
+
+    /**
+     * Executes one command against this instance's task list.
+     *
+     * @param command command to execute
+     * @param ui interface used to display the result
+     * @return {@code true} when the command is {@code bye}
+     * @throws KiaException if the command is invalid or persistence fails
+     */
+    private boolean processCommand(String command, Ui ui) throws KiaException {
+        CommandType commandType = classifyCommand(command);
+        if (commandType == CommandType.BYE) {
+            Command exitCommand = new ExitCommand();
+            exitCommand.execute(tasks, ui);
+            return exitCommand.isExit();
+        } else if (commandType == CommandType.LIST) {
+            ui.showTaskList(tasks);
+        } else if (commandType == CommandType.FIND) {
+            String keyword = parseFindKeyword(command);
+            ui.showMatchingTasks(tasks, keyword);
+        } else if (commandType == CommandType.DELETE) {
+            int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
+            Task removedTask = tasks.remove(taskNumber - 1);
+            try {
+                saveTasks(tasks);
+            } catch (KiaException e) {
+                tasks.add(taskNumber - 1, removedTask);
+                throw e;
+            }
+            ui.showTaskDeleted(removedTask, tasks.size());
+        } else if (commandType == CommandType.MARK) {
+            int taskNumber = parseTaskNumber(command, "mark ", tasks.size());
+            Task task = tasks.get(taskNumber - 1);
+            TaskStatus previousStatus = task.getStatus();
+            task.markAsDone();
+            try {
+                saveTasks(tasks);
+            } catch (KiaException e) {
+                task.setStatus(previousStatus);
+                throw e;
+            }
+            ui.showTaskMarked(task);
+        } else if (commandType == CommandType.UNMARK) {
+            int taskNumber = parseTaskNumber(command, "unmark ", tasks.size());
+            Task task = tasks.get(taskNumber - 1);
+            TaskStatus previousStatus = task.getStatus();
+            task.markAsUndone();
+            try {
+                saveTasks(tasks);
+            } catch (KiaException e) {
+                task.setStatus(previousStatus);
+                throw e;
+            }
+            ui.showTaskUnmarked(task);
+        } else {
+            Task newTask = createTask(command);
+            tasks.add(newTask);
+            try {
+                saveTasks(tasks);
+            } catch (KiaException e) {
+                tasks.remove(tasks.size() - 1);
+                throw e;
+            }
+            ui.showTaskAdded(newTask, tasks.size());
+        }
+        return false;
     }
 
     /**

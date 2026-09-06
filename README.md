@@ -68,3 +68,24 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    ```
 
 **Warning:** Keep the `src\main\java` folder as the root folder for Java files (i.e., don't rename those folders or move Java files to another folder outside of this folder path), as this is the default location some tools (e.g., Gradle) expect to find Java files.
+
+## Running the JavaFX GUI with Gradle
+
+Use JDK 25 and run:
+
+```powershell
+.\gradlew.bat run
+```
+
+Gradle supplies JavaFX's platform libraries and the native-access flags needed by
+JavaFX 17 on JDK 25. The application uses the tutorial's non-modular classpath
+layout, so JavaFX may still print its informational `unnamed module` warning;
+it does not prevent the GUI from starting. Removing that warning entirely would
+require migrating the project to a named Java module.
+
+If you launch `kia.Launcher` directly from IntelliJ, add these VM options to the
+run configuration as Gradle cannot apply them to an IDE-created configuration:
+
+```text
+--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow
+```
