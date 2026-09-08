@@ -10,6 +10,9 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 import kia.command.Command;
 import kia.command.CommandType;
@@ -19,6 +22,7 @@ import kia.task.Deadline;
 import kia.task.Event;
 import kia.task.Task;
 import kia.task.TaskStatus;
+import kia.task.TaskType;
 import kia.task.Todo;
 import kia.ui.Ui;
 
@@ -29,11 +33,55 @@ public class Kia {
     /** Relative, OS-independent location of Kia's task data. */
     private static final Path TASK_FILE = Path.of("data", "kia.txt");
 
+    private static final String UPDATE_COMMAND = "update";
+    private static final String UPDATE_PREFIX = UPDATE_COMMAND + " ";
+
     /** Tasks managed by this Kia instance. */
     private final ArrayList<Task> tasks;
 
     /** Startup loading failure, if the persisted data could not be read. */
     private KiaException loadingError;
+
+    /** Fields accepted by the update command. */
+    private enum UpdateField {
+        DESCRIPTION("/description"),
+        TYPE("/type"),
+        BY("/by"),
+        FROM("/from"),
+        TO("/to");
+
+        private final String marker;
+
+        UpdateField(String marker) {
+            this.marker = marker;
+        }
+
+        private static UpdateField fromMarker(String marker) {
+            for (UpdateField field : values()) {
+                if (field.marker.equals(marker)) {
+                    return field;
+                }
+            }
+            return null;
+        }
+    }
+
+    /** Parsed field values supplied to one update command. */
+    private static final class UpdateRequest {
+        private final Map<UpdateField, String> values = new EnumMap<>(UpdateField.class);
+
+        private void put(UpdateField field, String value) {
+            values.put(field, value);
+        }
+
+        private boolean has(UpdateField field) {
+            return values.containsKey(field);
+        }
+
+        private String get(UpdateField field) {
+            return values.get(field);
+        }
+    }
 
     /** Creates the application entry-point object. */
     public Kia() {
@@ -98,6 +146,15 @@ public class Kia {
     }
 
     /**
+     * Returns a read-only snapshot of the current tasks for presentation code.
+     *
+     * @return an immutable view of the current task objects
+     */
+    public List<Task> getTasksSnapshot() {
+        return List.copyOf(tasks);
+    }
+
+    /**
      * Executes one command against this instance's task list.
      *
      * @param command command to execute
@@ -118,6 +175,8 @@ public class Kia {
         } else if (commandType == CommandType.FIND) {
             String keyword = parseFindKeyword(command);
             ui.showMatchingTasks(tasks, keyword);
+        } else if (commandType == CommandType.UPDATE) {
+            updateTask(command, ui);
         } else if (commandType == CommandType.DELETE) {
             int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
             Task removedTask = tasks.remove(taskNumber - 1);
@@ -181,6 +240,8 @@ public class Kia {
             return CommandType.DELETE;
         } else if (command.equals("find") || command.startsWith("find ")) {
             return CommandType.FIND;
+        } else if (command.equals(UPDATE_COMMAND) || command.startsWith(UPDATE_PREFIX)) {
+            return CommandType.UPDATE;
         } else if (command.equals("mark") || command.startsWith("mark ")) {
             return CommandType.MARK;
         } else if (command.equals("unmark") || command.startsWith("unmark ")) {
@@ -270,6 +331,256 @@ public class Kia {
             throw new KiaException("A find command must include a keyword.");
         }
         return keyword;
+    }
+
+    /** Updates an existing task and rolls back the replacement if saving fails. */
+    private void updateTask(String command, Ui ui) throws KiaException {
+        int taskNumber = parseUpdateTaskNumber(command, tasks.size());
+        UpdateRequest request = parseUpdateRequest(command);
+        Task originalTask = tasks.get(taskNumber - 1);
+        Task updatedTask = buildUpdatedTask(originalTask, request);
+        updatedTask.setStatus(originalTask.getStatus());
+
+        if (originalTask.toStorageString().equals(updatedTask.toStorageString())) {
+            ui.showTaskUnchanged(originalTask);
+            return;
+        }
+
+        tasks.set(taskNumber - 1, updatedTask);
+        try {
+            saveTasks(tasks);
+        } catch (KiaException e) {
+            tasks.set(taskNumber - 1, originalTask);
+            throw e;
+        }
+        ui.showTaskUpdated(updatedTask);
+    }
+
+    /** Parses the one-based task number at the start of an update command. */
+    private static int parseUpdateTaskNumber(String command, int taskCount) throws KiaException {
+        if (command.equals(UPDATE_COMMAND)) {
+            throw new KiaException("The update command must include a task number.");
+        }
+
+        String arguments = command.substring(UPDATE_PREFIX.length()).trim();
+        if (arguments.isEmpty()) {
+            throw new KiaException("The update command must include a task number.");
+        }
+        int separator = findWhitespace(arguments, 0);
+        String taskNumberText = separator < 0 ? arguments : arguments.substring(0, separator);
+        try {
+            int taskNumber = Integer.parseInt(taskNumberText);
+            if (taskNumber < 1 || taskNumber > taskCount) {
+                throw new KiaException("The task number is invalid.");
+            }
+            return taskNumber;
+        } catch (NumberFormatException e) {
+            throw new KiaException("The task number is invalid.");
+        }
+    }
+
+    /** Parses all field markers and literal values after an update task number. */
+    private static UpdateRequest parseUpdateRequest(String command) throws KiaException {
+        String arguments = command.substring(UPDATE_PREFIX.length()).trim();
+        int separator = findWhitespace(arguments, 0);
+        if (separator < 0) {
+            throw new KiaException("The update command must include at least one field.");
+        }
+
+        String fieldsText = arguments.substring(separator).trim();
+        if (fieldsText.isEmpty()) {
+            throw new KiaException("The update command must include at least one field.");
+        }
+
+        UpdateRequest request = new UpdateRequest();
+        int cursor = 0;
+        while (cursor < fieldsText.length()) {
+            cursor = skipWhitespace(fieldsText, cursor);
+            if (cursor >= fieldsText.length()) {
+                break;
+            }
+            if (fieldsText.charAt(cursor) != '/') {
+                throw new KiaException("An update field must start with '/'.");
+            }
+
+            int markerEnd = findWhitespace(fieldsText, cursor);
+            if (markerEnd < 0) {
+                markerEnd = fieldsText.length();
+            }
+            String marker = fieldsText.substring(cursor, markerEnd);
+            UpdateField field = UpdateField.fromMarker(marker);
+            if (field == null) {
+                throw new KiaException("Unknown update field: " + marker + ".");
+            }
+            if (request.has(field)) {
+                throw new KiaException("Each update field may appear only once.");
+            }
+
+            int valueStart = skipWhitespace(fieldsText, markerEnd);
+            int nextField = findNextFieldStart(fieldsText, valueStart);
+            int valueEnd = nextField < 0 ? fieldsText.length() : nextField;
+            String value = fieldsText.substring(valueStart, valueEnd).trim();
+            if (value.isEmpty()) {
+                throw new KiaException(emptyValueMessage(field));
+            }
+            request.put(field, value);
+            cursor = valueEnd;
+        }
+
+        return request;
+    }
+
+    /** Builds a validated replacement task from the original task and update fields. */
+    private static Task buildUpdatedTask(Task originalTask, UpdateRequest request) throws KiaException {
+        TaskType targetType = originalTask.getType();
+        if (request.has(UpdateField.TYPE)) {
+            targetType = parseTaskType(request.get(UpdateField.TYPE));
+        }
+        validateFieldsForType(targetType, request);
+
+        String description = request.has(UpdateField.DESCRIPTION)
+                ? request.get(UpdateField.DESCRIPTION) : originalTask.getDescription();
+        Task updatedTask;
+        switch (targetType) {
+            case TODO:
+                updatedTask = new Todo(description);
+                break;
+            case DEADLINE:
+                LocalDate by = getUpdatedDeadline(originalTask, request);
+                updatedTask = new Deadline(description, by);
+                break;
+            case EVENT:
+                String from = getUpdatedEventStart(originalTask, request);
+                String to = getUpdatedEventEnd(originalTask, request);
+                updatedTask = new Event(description, from, to);
+                break;
+            default:
+                throw new KiaException("The task type is invalid.");
+        }
+        return updatedTask;
+    }
+
+    /** Validates that type-specific fields apply to the requested target type. */
+    private static void validateFieldsForType(TaskType targetType, UpdateRequest request) throws KiaException {
+        if (targetType == TaskType.TODO && request.has(UpdateField.BY)) {
+            throw new KiaException("The /by field is only valid for deadlines.");
+        }
+        if (targetType == TaskType.TODO
+                && (request.has(UpdateField.FROM) || request.has(UpdateField.TO))) {
+            throw new KiaException("The /from and /to fields are only valid for events.");
+        }
+        if (targetType == TaskType.DEADLINE
+                && (request.has(UpdateField.FROM) || request.has(UpdateField.TO))) {
+            throw new KiaException("The /from and /to fields are only valid for events.");
+        }
+        if (targetType == TaskType.EVENT && request.has(UpdateField.BY)) {
+            throw new KiaException("The /by field is only valid for deadlines.");
+        }
+    }
+
+    /** Parses a target task type from its command value. */
+    private static TaskType parseTaskType(String value) throws KiaException {
+        switch (value) {
+            case "todo":
+                return TaskType.TODO;
+            case "deadline":
+                return TaskType.DEADLINE;
+            case "event":
+                return TaskType.EVENT;
+            default:
+                throw new KiaException("The task type must be todo, deadline, or event.");
+        }
+    }
+
+    /** Resolves and validates a deadline date for an updated task. */
+    private static LocalDate getUpdatedDeadline(Task originalTask, UpdateRequest request) throws KiaException {
+        if (request.has(UpdateField.BY)) {
+            try {
+                return LocalDate.parse(request.get(UpdateField.BY));
+            } catch (DateTimeParseException e) {
+                throw new KiaException("The /by date or time must use yyyy-MM-dd format.");
+            }
+        }
+        if (originalTask instanceof Deadline) {
+            return ((Deadline) originalTask).getBy();
+        }
+        throw new KiaException("Converting to a deadline requires a /by date or time.");
+    }
+
+    /** Resolves the start value for an updated event. */
+    private static String getUpdatedEventStart(Task originalTask, UpdateRequest request) throws KiaException {
+        if (request.has(UpdateField.FROM)) {
+            return request.get(UpdateField.FROM);
+        }
+        if (originalTask instanceof Event) {
+            return ((Event) originalTask).getFrom();
+        }
+        throw new KiaException("Converting to an event requires /from and /to date or time values.");
+    }
+
+    /** Resolves the end value for an updated event. */
+    private static String getUpdatedEventEnd(Task originalTask, UpdateRequest request) throws KiaException {
+        if (request.has(UpdateField.TO)) {
+            return request.get(UpdateField.TO);
+        }
+        if (originalTask instanceof Event) {
+            return ((Event) originalTask).getTo();
+        }
+        throw new KiaException("Converting to an event requires /from and /to date or time values.");
+    }
+
+    /** Returns an error message for a missing field value. */
+    private static String emptyValueMessage(UpdateField field) {
+        switch (field) {
+            case DESCRIPTION:
+                return "The description cannot be empty.";
+            case TYPE:
+                return "The task type cannot be empty.";
+            case BY:
+                return "The /by value cannot be empty.";
+            case FROM:
+                return "The /from value cannot be empty.";
+            case TO:
+                return "The /to value cannot be empty.";
+            default:
+                return "An update value cannot be empty.";
+        }
+    }
+
+    /** Finds the next whitespace character, or the string length when none exists. */
+    private static int findWhitespace(String text, int start) {
+        for (int i = start; i < text.length(); i++) {
+            if (Character.isWhitespace(text.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Skips whitespace starting at the supplied index. */
+    private static int skipWhitespace(String text, int start) {
+        int cursor = start;
+        while (cursor < text.length() && Character.isWhitespace(text.charAt(cursor))) {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    /** Finds a slash-delimited field marker at a token boundary. */
+    private static int findNextFieldStart(String text, int start) {
+        for (int i = start; i < text.length(); i++) {
+            if (text.charAt(i) == '/' && (i == 0 || Character.isWhitespace(text.charAt(i - 1)))) {
+                int markerEnd = findWhitespace(text, i);
+                if (markerEnd < 0) {
+                    markerEnd = text.length();
+                }
+                String marker = text.substring(i, markerEnd);
+                if (UpdateField.fromMarker(marker) != null) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**

@@ -37,6 +37,24 @@ public class Task {
     }
 
     /**
+     * Returns the task description.
+     *
+     * @return the task description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Returns the task category.
+     *
+     * @return the task type
+     */
+    public TaskType getType() {
+        return type;
+    }
+
+    /**
      * Returns the marker used to display this task's completion state.
      *
      * @return {@code X} when complete, otherwise a space
