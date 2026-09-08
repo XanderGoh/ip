@@ -18,6 +18,8 @@ public class Event extends Task {
      */
     public Event(String description, String from, String to) {
         super(description, TaskType.EVENT);
+        assert from != null && !from.isBlank() : "An event must have a start value.";
+        assert to != null && !to.isBlank() : "An event must have an end value.";
         this.from = from;
         this.to = to;
     }

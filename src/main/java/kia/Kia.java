@@ -106,6 +106,8 @@ public class Kia {
      * @throws KiaException if the command is invalid or persistence fails
      */
     private boolean processCommand(String command, Ui ui) throws KiaException {
+        assert command != null : "Command processing requires a normalized command.";
+        assert ui != null : "Command processing requires a user interface.";
         CommandType commandType = classifyCommand(command);
         if (commandType == CommandType.BYE) {
             Command exitCommand = new ExitCommand();
@@ -287,6 +289,8 @@ public class Kia {
             if (taskNumber < 1 || taskNumber > taskCount) {
                 throw new KiaException("The task number is invalid.");
             }
+            assert taskNumber >= 1 && taskNumber <= taskCount
+                    : "A validated task number must be within the current list bounds.";
             return taskNumber;
         } catch (NumberFormatException e) {
             throw new KiaException("The task number is invalid.");
@@ -300,6 +304,7 @@ public class Kia {
      * @throws KiaException if the file cannot be written
      */
     private static void saveTasks(ArrayList<Task> tasks) throws KiaException {
+        assert tasks != null : "Saving tasks requires a task list.";
         try {
             Path parent = TASK_FILE.getParent();
             if (parent != null) {
@@ -344,7 +349,9 @@ public class Kia {
                     continue;
                 }
                 try {
-                    loadedTasks.add(parseStoredTask(line));
+                    Task loadedTask = parseStoredTask(line);
+                    assert loadedTask != null : "A valid storage record must produce a task.";
+                    loadedTasks.add(loadedTask);
                 } catch (KiaException e) {
                     System.out.println("Hey!!! Skipping invalid task data on line " + lineNumber + ".");
                 }

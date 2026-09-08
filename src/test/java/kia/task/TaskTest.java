@@ -2,7 +2,10 @@ package kia.task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +13,24 @@ import org.junit.jupiter.api.Test;
  * Unit tests for task completion state transitions.
  */
 class TaskTest {
+    /** Verifies that task construction asserts the required description invariant. */
+    @Test
+    void taskConstructor_nullDescription_assertsInvariant() {
+        assertThrows(AssertionError.class, () -> new Task(null));
+    }
+
+    /** Verifies that a deadline asserts the presence of a parsed date. */
+    @Test
+    void deadlineConstructor_nullDate_assertsInvariant() {
+        assertThrows(AssertionError.class, () -> new Deadline("submit report", (LocalDate) null));
+    }
+
+    /** Verifies that an event asserts non-empty start and end values. */
+    @Test
+    void eventConstructor_blankBoundary_assertsInvariant() {
+        assertThrows(AssertionError.class, () -> new Event("meeting", " ", "4pm"));
+    }
+
     /** Verifies that a new task reports the pending status. */
     @Test
     void getStatusIcon_newTask_returnsPendingIcon() {
@@ -108,6 +129,14 @@ class TaskTest {
 
         assertEquals(TaskStatus.DONE, task.getStatus());
         assertEquals("X", task.getStatusIcon());
+    }
+
+    /** Verifies that a task cannot be restored to an undefined status. */
+    @Test
+    void setStatus_nullStatus_assertsInvariant() {
+        Task task = new Task("read book");
+
+        assertThrows(AssertionError.class, () -> task.setStatus(null));
     }
 
     /** Verifies the pending task display format. */

@@ -29,6 +29,8 @@ public class Task {
      * @param type the type of task
      */
     protected Task(String description, TaskType type) {
+        assert description != null : "Every task must have a description.";
+        assert type != null : "Every task must have a task type.";
         this.description = description;
         this.type = type;
         this.status = TaskStatus.PENDING;
@@ -102,6 +104,7 @@ public class Task {
      * @param status the status to restore
      */
     public void setStatus(TaskStatus status) {
+        assert status != null : "A task status must always be defined.";
         this.status = status;
     }
 
@@ -121,6 +124,9 @@ public class Task {
      * @return a pipe-delimited task record
      */
     public String toStorageString() {
+        assert description != null : "Persisted tasks must have descriptions.";
+        assert type != null : "Persisted tasks must have types.";
+        assert status != null : "Persisted tasks must have statuses.";
         String done = status == TaskStatus.DONE ? "1" : "0";
         return type.getIcon() + " | " + done + " | " + description;
     }
