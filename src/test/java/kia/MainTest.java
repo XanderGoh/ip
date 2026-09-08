@@ -46,6 +46,22 @@ class MainTest {
         }
     }
 
+    /** Verifies that the shared status handler preserves mark and unmark behavior. */
+    @Test
+    void getResponse_markAndUnmarkCommands_updatesTaskState() throws Exception {
+        Path taskFile = Path.of("data", "kia.txt");
+        Files.deleteIfExists(taskFile);
+        try {
+            Kia kia = new Kia();
+            kia.getResponse("todo read book");
+
+            assertTrue(kia.getResponse("mark 1").contains("[T][X] read book"));
+            assertTrue(kia.getResponse("unmark 1").contains("[T][ ] read book"));
+        } finally {
+            Files.deleteIfExists(taskFile);
+        }
+    }
+
     /** Verifies that the FXML view is included in the application resources. */
     @Test
     void mainWindow_fxmlViewExists_inApplicationResources() {

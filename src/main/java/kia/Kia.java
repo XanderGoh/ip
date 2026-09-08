@@ -105,61 +105,96 @@ public class Kia {
      */
     private boolean processCommand(String command, Ui ui) throws KiaException {
         CommandType commandType = Parser.classifyCommand(command);
-        if (commandType == CommandType.BYE) {
-            Command exitCommand = new ExitCommand();
-            exitCommand.execute(tasks, ui);
-            return exitCommand.isExit();
-        } else if (commandType == CommandType.LIST) {
-            ui.showTaskList(tasks);
-        } else if (commandType == CommandType.FIND) {
-            String keyword = Parser.parseFindKeyword(command);
-            ui.showMatchingTasks(tasks, keyword);
-        } else if (commandType == CommandType.DELETE) {
-            int taskNumber = Parser.parseTaskNumber(command, "delete ", tasks.size());
-            Task removedTask = tasks.remove(taskNumber - 1);
-            try {
-                storage.save(tasks);
-            } catch (KiaException e) {
-                tasks.add(taskNumber - 1, removedTask);
-                throw e;
-            }
-            ui.showTaskDeleted(removedTask, tasks.size());
-        } else if (commandType == CommandType.MARK) {
-            int taskNumber = Parser.parseTaskNumber(command, "mark ", tasks.size());
-            Task task = tasks.get(taskNumber - 1);
-            TaskStatus previousStatus = task.getStatus();
-            task.markAsDone();
-            try {
-                storage.save(tasks);
-            } catch (KiaException e) {
-                task.setStatus(previousStatus);
-                throw e;
-            }
-            ui.showTaskMarked(task);
-        } else if (commandType == CommandType.UNMARK) {
-            int taskNumber = Parser.parseTaskNumber(command, "unmark ", tasks.size());
-            Task task = tasks.get(taskNumber - 1);
-            TaskStatus previousStatus = task.getStatus();
-            task.markAsUndone();
-            try {
-                storage.save(tasks);
-            } catch (KiaException e) {
-                task.setStatus(previousStatus);
-                throw e;
-            }
-            ui.showTaskUnmarked(task);
-        } else {
-            Task newTask = Parser.createTask(command);
-            tasks.add(newTask);
-            try {
-                storage.save(tasks);
-            } catch (KiaException e) {
-                tasks.remove(tasks.size() - 1);
-                throw e;
-            }
-            ui.showTaskAdded(newTask, tasks.size());
+        switch (commandType) {
+            case BYE:
+                return executeExit(ui);
+            case LIST:
+                ui.showTaskList(tasks);
+                break;
+            case FIND:
+                showMatchingTasks(command, ui);
+                break;
+            case DELETE:
+                deleteTask(command, ui);
+                break;
+            case MARK:
+                updateTaskStatus(command, ui, true);
+                break;
+            case UNMARK:
+                updateTaskStatus(command, ui, false);
+                break;
+            default:
+                addTask(command, ui);
+                break;
         }
         return false;
+    }
+
+    /**
+     * Executes the exit command and reports whether the command loop should stop.
+     *
+     * @throws KiaException if the exit command cannot be executed
+     */
+    private boolean executeExit(Ui ui) throws KiaException {
+        Command exitCommand = new ExitCommand();
+        exitCommand.execute(tasks, ui);
+        return exitCommand.isExit();
+    }
+
+    /** Displays tasks matching the keyword supplied by a find command. */
+    private void showMatchingTasks(String command, Ui ui) throws KiaException {
+        String keyword = Parser.parseFindKeyword(command);
+        ui.showMatchingTasks(tasks, keyword);
+    }
+
+    /** Deletes a task and rolls back the in-memory change if saving fails. */
+    private void deleteTask(String command, Ui ui) throws KiaException {
+        int taskNumber = Parser.parseTaskNumber(command, "delete ", tasks.size());
+        Task removedTask = tasks.remove(taskNumber - 1);
+        try {
+            storage.save(tasks);
+        } catch (KiaException e) {
+            tasks.add(taskNumber - 1, removedTask);
+            throw e;
+        }
+        ui.showTaskDeleted(removedTask, tasks.size());
+    }
+
+    /** Marks or unmarks a task and rolls back its state if saving fails. */
+    private void updateTaskStatus(String command, Ui ui, boolean shouldMarkDone) throws KiaException {
+        String commandPrefix = shouldMarkDone ? "mark " : "unmark ";
+        int taskNumber = Parser.parseTaskNumber(command, commandPrefix, tasks.size());
+        Task task = tasks.get(taskNumber - 1);
+        TaskStatus previousStatus = task.getStatus();
+        if (shouldMarkDone) {
+            task.markAsDone();
+        } else {
+            task.markAsUndone();
+        }
+        try {
+            storage.save(tasks);
+        } catch (KiaException e) {
+            task.setStatus(previousStatus);
+            throw e;
+        }
+        if (shouldMarkDone) {
+            ui.showTaskMarked(task);
+        } else {
+            ui.showTaskUnmarked(task);
+        }
+    }
+
+    /** Adds a task and rolls back the in-memory change if saving fails. */
+    private void addTask(String command, Ui ui) throws KiaException {
+        Task newTask = Parser.createTask(command);
+        tasks.add(newTask);
+        try {
+            storage.save(tasks);
+        } catch (KiaException e) {
+            tasks.remove(tasks.size() - 1);
+            throw e;
+        }
+        ui.showTaskAdded(newTask, tasks.size());
     }
 
 }
