@@ -10,6 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.List;
 
 import kia.command.Command;
 import kia.command.CommandType;
@@ -310,10 +311,9 @@ public class Kia {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            ArrayList<String> records = new ArrayList<>();
-            for (Task task : tasks) {
-                records.add(task.toStorageString());
-            }
+            List<String> records = tasks.stream()
+                    .map(Task::toStorageString)
+                    .toList();
             Files.write(TASK_FILE, records, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
                     StandardOpenOption.WRITE);
