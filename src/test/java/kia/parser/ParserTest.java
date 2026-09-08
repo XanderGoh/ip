@@ -26,6 +26,18 @@ class ParserTest {
         assertEquals(CommandType.UNKNOWN, Parser.classifyCommand("unknown"));
     }
 
+    /** Verifies that commands without arguments still retain their command categories. */
+    @Test
+    void classifyCommand_argumentlessCommands_returnsExpectedTypes() {
+        assertEquals(CommandType.TODO, Parser.classifyCommand("todo"));
+        assertEquals(CommandType.DEADLINE, Parser.classifyCommand("deadline"));
+        assertEquals(CommandType.EVENT, Parser.classifyCommand("event"));
+        assertEquals(CommandType.FIND, Parser.classifyCommand("find"));
+        assertEquals(CommandType.MARK, Parser.classifyCommand("mark"));
+        assertEquals(CommandType.UNMARK, Parser.classifyCommand("unmark"));
+        assertEquals(CommandType.DELETE, Parser.classifyCommand("delete"));
+    }
+
     /** Verifies that task commands produce the correct subtype and values. */
     @Test
     void createTask_supportedTaskCommands_buildsExpectedTasks() throws Exception {

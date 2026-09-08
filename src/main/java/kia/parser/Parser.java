@@ -12,6 +12,26 @@ import kia.task.Todo;
 
 /** Converts raw user commands into command categories, arguments, and tasks. */
 public final class Parser {
+    private static final String BYE_COMMAND = "bye";
+    private static final String LIST_COMMAND = "list";
+    private static final String DELETE_COMMAND = "delete";
+    private static final String DELETE_PREFIX = DELETE_COMMAND + " ";
+    private static final String FIND_COMMAND = "find";
+    private static final String FIND_PREFIX = FIND_COMMAND + " ";
+    private static final String MARK_COMMAND = "mark";
+    private static final String MARK_PREFIX = MARK_COMMAND + " ";
+    private static final String UNMARK_COMMAND = "unmark";
+    private static final String UNMARK_PREFIX = UNMARK_COMMAND + " ";
+    private static final String TODO_COMMAND = "todo";
+    private static final String TODO_PREFIX = TODO_COMMAND + " ";
+    private static final String DEADLINE_COMMAND = "deadline";
+    private static final String DEADLINE_PREFIX = DEADLINE_COMMAND + " ";
+    private static final String EVENT_COMMAND = "event";
+    private static final String EVENT_PREFIX = EVENT_COMMAND + " ";
+    private static final String BY_MARKER = " /by ";
+    private static final String FROM_MARKER = " /from ";
+    private static final String TO_MARKER = " /to ";
+
     private Parser() {
     }
 
@@ -22,23 +42,23 @@ public final class Parser {
      * @return the command category
      */
     public static CommandType classifyCommand(String command) {
-        if (command.equals("bye")) {
+        if (command.equals(BYE_COMMAND)) {
             return CommandType.BYE;
-        } else if (command.equals("list")) {
+        } else if (command.equals(LIST_COMMAND)) {
             return CommandType.LIST;
-        } else if (command.equals("delete") || command.startsWith("delete ")) {
+        } else if (command.equals(DELETE_COMMAND) || command.startsWith(DELETE_PREFIX)) {
             return CommandType.DELETE;
-        } else if (command.equals("find") || command.startsWith("find ")) {
+        } else if (command.equals(FIND_COMMAND) || command.startsWith(FIND_PREFIX)) {
             return CommandType.FIND;
-        } else if (command.equals("mark") || command.startsWith("mark ")) {
+        } else if (command.equals(MARK_COMMAND) || command.startsWith(MARK_PREFIX)) {
             return CommandType.MARK;
-        } else if (command.equals("unmark") || command.startsWith("unmark ")) {
+        } else if (command.equals(UNMARK_COMMAND) || command.startsWith(UNMARK_PREFIX)) {
             return CommandType.UNMARK;
-        } else if (command.equals("todo") || command.startsWith("todo ")) {
+        } else if (command.equals(TODO_COMMAND) || command.startsWith(TODO_PREFIX)) {
             return CommandType.TODO;
-        } else if (command.equals("deadline") || command.startsWith("deadline ")) {
+        } else if (command.equals(DEADLINE_COMMAND) || command.startsWith(DEADLINE_PREFIX)) {
             return CommandType.DEADLINE;
-        } else if (command.equals("event") || command.startsWith("event ")) {
+        } else if (command.equals(EVENT_COMMAND) || command.startsWith(EVENT_PREFIX)) {
             return CommandType.EVENT;
         }
         return CommandType.UNKNOWN;
@@ -52,24 +72,24 @@ public final class Parser {
      * @throws KiaException if the command is malformed
      */
     public static Task createTask(String command) throws KiaException {
-        if (command.equals("todo") || command.startsWith("todo ")) {
-            String description = command.length() <= "todo ".length()
-                    ? "" : command.substring("todo ".length()).trim();
+        if (command.equals(TODO_COMMAND) || command.startsWith(TODO_PREFIX)) {
+            String description = command.length() <= TODO_PREFIX.length()
+                    ? "" : command.substring(TODO_PREFIX.length()).trim();
             if (description.isEmpty()) {
                 throw new KiaException("The description of a todo cannot be empty.");
             }
             return new Todo(description);
         }
 
-        if (command.equals("deadline") || command.startsWith("deadline ")) {
-            String details = command.length() <= "deadline ".length()
-                    ? "" : command.substring("deadline ".length()).trim();
-            int byIndex = details.indexOf(" /by ");
+        if (command.equals(DEADLINE_COMMAND) || command.startsWith(DEADLINE_PREFIX)) {
+            String details = command.length() <= DEADLINE_PREFIX.length()
+                    ? "" : command.substring(DEADLINE_PREFIX.length()).trim();
+            int byIndex = details.indexOf(BY_MARKER);
             if (byIndex < 0) {
                 throw new KiaException("A deadline must include a /by date or time.");
             }
             String description = details.substring(0, byIndex).trim();
-            String by = details.substring(byIndex + " /by ".length()).trim();
+            String by = details.substring(byIndex + BY_MARKER.length()).trim();
             if (description.isEmpty()) {
                 throw new KiaException("The description of a deadline cannot be empty.");
             }
@@ -83,17 +103,17 @@ public final class Parser {
             }
         }
 
-        if (command.equals("event") || command.startsWith("event ")) {
-            String details = command.length() <= "event ".length()
-                    ? "" : command.substring("event ".length()).trim();
-            int fromIndex = details.indexOf(" /from ");
-            int toIndex = fromIndex < 0 ? -1 : details.indexOf(" /to ", fromIndex + " /from ".length());
+        if (command.equals(EVENT_COMMAND) || command.startsWith(EVENT_PREFIX)) {
+            String details = command.length() <= EVENT_PREFIX.length()
+                    ? "" : command.substring(EVENT_PREFIX.length()).trim();
+            int fromIndex = details.indexOf(FROM_MARKER);
+            int toIndex = fromIndex < 0 ? -1 : details.indexOf(TO_MARKER, fromIndex + FROM_MARKER.length());
             if (fromIndex < 0 || toIndex < 0) {
                 throw new KiaException("An event must include /from and /to date or time values.");
             }
             String description = details.substring(0, fromIndex).trim();
-            String from = details.substring(fromIndex + " /from ".length(), toIndex).trim();
-            String to = details.substring(toIndex + " /to ".length()).trim();
+            String from = details.substring(fromIndex + FROM_MARKER.length(), toIndex).trim();
+            String to = details.substring(toIndex + TO_MARKER.length()).trim();
             if (description.isEmpty()) {
                 throw new KiaException("The description of an event cannot be empty.");
             }
@@ -114,8 +134,8 @@ public final class Parser {
      * @throws KiaException if no keyword was supplied
      */
     public static String parseFindKeyword(String command) throws KiaException {
-        String keyword = command.length() <= "find ".length()
-                ? "" : command.substring("find ".length()).trim();
+        String keyword = command.length() <= FIND_PREFIX.length()
+                ? "" : command.substring(FIND_PREFIX.length()).trim();
         if (keyword.isEmpty()) {
             throw new KiaException("A find command must include a keyword.");
         }
