@@ -104,6 +104,8 @@ public class Kia {
      * @throws KiaException if the command is invalid or persistence fails
      */
     private boolean processCommand(String command, Ui ui) throws KiaException {
+        assert command != null : "Command processing requires a normalized command.";
+        assert ui != null : "Command processing requires a user interface.";
         CommandType commandType = Parser.classifyCommand(command);
         switch (commandType) {
             case BYE:

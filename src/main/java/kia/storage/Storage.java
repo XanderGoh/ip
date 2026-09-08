@@ -39,6 +39,7 @@ public class Storage {
      * @throws KiaException if the file cannot be written
      */
     public void save(List<Task> tasks) throws KiaException {
+        assert tasks != null : "Saving tasks requires a task list.";
         try {
             Path parent = filePath.getParent();
             if (parent != null) {
@@ -81,7 +82,9 @@ public class Storage {
                     continue;
                 }
                 try {
-                    loadedTasks.add(parseStoredTask(line));
+                    Task loadedTask = parseStoredTask(line);
+                    assert loadedTask != null : "A valid storage record must produce a task.";
+                    loadedTasks.add(loadedTask);
                 } catch (KiaException e) {
                     System.out.println("Hey!!! Skipping invalid task data on line " + lineNumber + ".");
                 }

@@ -172,6 +172,8 @@ public final class Parser {
             if (taskNumber < 1 || taskNumber > taskCount) {
                 throw new KiaException("The task number is invalid.");
             }
+            assert taskNumber >= 1 && taskNumber <= taskCount
+                    : "A validated task number must be within the current list bounds.";
             return taskNumber;
         } catch (NumberFormatException e) {
             throw new KiaException("The task number is invalid.");
