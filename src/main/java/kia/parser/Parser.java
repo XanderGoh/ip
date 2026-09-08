@@ -73,57 +73,70 @@ public final class Parser {
      */
     public static Task createTask(String command) throws KiaException {
         if (command.equals(TODO_COMMAND) || command.startsWith(TODO_PREFIX)) {
-            String description = command.length() <= TODO_PREFIX.length()
-                    ? "" : command.substring(TODO_PREFIX.length()).trim();
-            if (description.isEmpty()) {
-                throw new KiaException("The description of a todo cannot be empty.");
-            }
-            return new Todo(description);
-        }
-
-        if (command.equals(DEADLINE_COMMAND) || command.startsWith(DEADLINE_PREFIX)) {
-            String details = command.length() <= DEADLINE_PREFIX.length()
-                    ? "" : command.substring(DEADLINE_PREFIX.length()).trim();
-            int byIndex = details.indexOf(BY_MARKER);
-            if (byIndex < 0) {
-                throw new KiaException("A deadline must include a /by date or time.");
-            }
-            String description = details.substring(0, byIndex).trim();
-            String by = details.substring(byIndex + BY_MARKER.length()).trim();
-            if (description.isEmpty()) {
-                throw new KiaException("The description of a deadline cannot be empty.");
-            }
-            if (by.isEmpty()) {
-                throw new KiaException("The /by date or time of a deadline cannot be empty.");
-            }
-            try {
-                return new Deadline(description, LocalDate.parse(by));
-            } catch (DateTimeParseException e) {
-                throw new KiaException("The /by date or time must use yyyy-MM-dd format.");
-            }
-        }
-
-        if (command.equals(EVENT_COMMAND) || command.startsWith(EVENT_PREFIX)) {
-            String details = command.length() <= EVENT_PREFIX.length()
-                    ? "" : command.substring(EVENT_PREFIX.length()).trim();
-            int fromIndex = details.indexOf(FROM_MARKER);
-            int toIndex = fromIndex < 0 ? -1 : details.indexOf(TO_MARKER, fromIndex + FROM_MARKER.length());
-            if (fromIndex < 0 || toIndex < 0) {
-                throw new KiaException("An event must include /from and /to date or time values.");
-            }
-            String description = details.substring(0, fromIndex).trim();
-            String from = details.substring(fromIndex + FROM_MARKER.length(), toIndex).trim();
-            String to = details.substring(toIndex + TO_MARKER.length()).trim();
-            if (description.isEmpty()) {
-                throw new KiaException("The description of an event cannot be empty.");
-            }
-            if (from.isEmpty() || to.isEmpty()) {
-                throw new KiaException("The /from and /to values of an event cannot be empty.");
-            }
-            return new Event(description, from, to);
+            return createTodo(command);
+        } else if (command.equals(DEADLINE_COMMAND) || command.startsWith(DEADLINE_PREFIX)) {
+            return createDeadline(command);
+        } else if (command.equals(EVENT_COMMAND) || command.startsWith(EVENT_PREFIX)) {
+            return createEvent(command);
         }
 
         throw new KiaException("What did you do...");
+    }
+
+    /** Creates a to-do task from its command text. */
+    private static Task createTodo(String command) throws KiaException {
+        String description = extractArguments(command, TODO_PREFIX);
+        if (description.isEmpty()) {
+            throw new KiaException("The description of a todo cannot be empty.");
+        }
+        return new Todo(description);
+    }
+
+    /** Creates a deadline task from its command text. */
+    private static Task createDeadline(String command) throws KiaException {
+        String details = extractArguments(command, DEADLINE_PREFIX);
+        int byIndex = details.indexOf(BY_MARKER);
+        if (byIndex < 0) {
+            throw new KiaException("A deadline must include a /by date or time.");
+        }
+        String description = details.substring(0, byIndex).trim();
+        String by = details.substring(byIndex + BY_MARKER.length()).trim();
+        if (description.isEmpty()) {
+            throw new KiaException("The description of a deadline cannot be empty.");
+        }
+        if (by.isEmpty()) {
+            throw new KiaException("The /by date or time of a deadline cannot be empty.");
+        }
+        try {
+            return new Deadline(description, LocalDate.parse(by));
+        } catch (DateTimeParseException e) {
+            throw new KiaException("The /by date or time must use yyyy-MM-dd format.");
+        }
+    }
+
+    /** Creates an event task from its command text. */
+    private static Task createEvent(String command) throws KiaException {
+        String details = extractArguments(command, EVENT_PREFIX);
+        int fromIndex = details.indexOf(FROM_MARKER);
+        int toIndex = fromIndex < 0 ? -1 : details.indexOf(TO_MARKER, fromIndex + FROM_MARKER.length());
+        if (fromIndex < 0 || toIndex < 0) {
+            throw new KiaException("An event must include /from and /to date or time values.");
+        }
+        String description = details.substring(0, fromIndex).trim();
+        String from = details.substring(fromIndex + FROM_MARKER.length(), toIndex).trim();
+        String to = details.substring(toIndex + TO_MARKER.length()).trim();
+        if (description.isEmpty()) {
+            throw new KiaException("The description of an event cannot be empty.");
+        }
+        if (from.isEmpty() || to.isEmpty()) {
+            throw new KiaException("The /from and /to values of an event cannot be empty.");
+        }
+        return new Event(description, from, to);
+    }
+
+    /** Extracts the text after a command prefix, or an empty string for no arguments. */
+    private static String extractArguments(String command, String prefix) {
+        return command.length() <= prefix.length() ? "" : command.substring(prefix.length()).trim();
     }
 
     /**

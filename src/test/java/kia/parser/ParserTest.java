@@ -43,9 +43,11 @@ class ParserTest {
     void createTask_supportedTaskCommands_buildsExpectedTasks() throws Exception {
         Task deadline = Parser.createTask("deadline return book /by 2019-12-02");
         Task event = Parser.createTask("event project meeting /from 2pm /to 4pm");
+        Task todo = Parser.createTask("todo borrow book");
 
         assertEquals("[D][ ] return book (by: Dec 02 2019)", deadline.toString());
         assertEquals("[E][ ] project meeting (from: 2pm to: 4pm)", event.toString());
+        assertEquals("[T][ ] borrow book", todo.toString());
     }
 
     /** Verifies that malformed task commands retain their user-facing errors. */
