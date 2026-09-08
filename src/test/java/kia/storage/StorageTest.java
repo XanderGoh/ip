@@ -58,12 +58,15 @@ class StorageTest {
         Files.writeString(file, String.join("\n",
                 "invalid record",
                 "T | 1 | loaded task",
-                "D | 0 | invalid date | 2019-02-30") + "\n", StandardCharsets.UTF_8);
+                "D | 0 | invalid date | 2019-02-30",
+                "E | 0 | valid event | 2pm | 4pm",
+                "T | 0 | extra field | ignored") + "\n", StandardCharsets.UTF_8);
         Storage storage = new Storage(file);
 
         ArrayList<Task> loadedTasks = storage.load();
 
-        assertEquals(1, loadedTasks.size());
+        assertEquals(2, loadedTasks.size());
         assertEquals("T | 1 | loaded task", loadedTasks.get(0).toStorageString());
+        assertEquals("E | 0 | valid event | 2pm | 4pm", loadedTasks.get(1).toStorageString());
     }
 }

@@ -115,24 +115,43 @@ public class Storage {
             throw new KiaException("A task record has an empty description.");
         }
 
-        Task task;
-        if (type.equals("T") && fields.length == 3) {
-            task = new Todo(description);
-        } else if (type.equals("D") && fields.length == 4 && !fields[3].trim().isEmpty()) {
-            try {
-                task = new Deadline(description, LocalDate.parse(fields[3].trim()));
-            } catch (DateTimeParseException e) {
-                throw new KiaException("A deadline record has an invalid date.");
-            }
-        } else if (type.equals("E") && fields.length == 5
-                && !fields[3].trim().isEmpty() && !fields[4].trim().isEmpty()) {
-            task = new Event(description, fields[3].trim(), fields[4].trim());
-        } else {
-            throw new KiaException("A task record has an invalid format.");
-        }
+        Task task = switch (type) {
+            case "T" -> parseTodo(fields, description);
+            case "D" -> parseDeadline(fields, description);
+            case "E" -> parseEvent(fields, description);
+            default -> throw new KiaException("A task record has an invalid format.");
+        };
         if (status.equals("1")) {
             task.markAsDone();
         }
         return task;
+    }
+
+    /** Parses a to-do record after common fields have been validated. */
+    private static Task parseTodo(String[] fields, String description) throws KiaException {
+        if (fields.length != 3) {
+            throw new KiaException("A task record has an invalid format.");
+        }
+        return new Todo(description);
+    }
+
+    /** Parses a deadline record after common fields have been validated. */
+    private static Task parseDeadline(String[] fields, String description) throws KiaException {
+        if (fields.length != 4 || fields[3].trim().isEmpty()) {
+            throw new KiaException("A task record has an invalid format.");
+        }
+        try {
+            return new Deadline(description, LocalDate.parse(fields[3].trim()));
+        } catch (DateTimeParseException e) {
+            throw new KiaException("A deadline record has an invalid date.");
+        }
+    }
+
+    /** Parses an event record after common fields have been validated. */
+    private static Task parseEvent(String[] fields, String description) throws KiaException {
+        if (fields.length != 5 || fields[3].trim().isEmpty() || fields[4].trim().isEmpty()) {
+            throw new KiaException("A task record has an invalid format.");
+        }
+        return new Event(description, fields[3].trim(), fields[4].trim());
     }
 }
