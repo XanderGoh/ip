@@ -1,12 +1,9 @@
 package kia;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -15,6 +12,7 @@ import kia.command.Command;
 import kia.command.CommandType;
 import kia.command.ExitCommand;
 import kia.exception.KiaException;
+import kia.storage.Storage;
 import kia.task.Deadline;
 import kia.task.Event;
 import kia.task.Task;
@@ -32,14 +30,18 @@ public class Kia {
     /** Tasks managed by this Kia instance. */
     private final ArrayList<Task> tasks;
 
+    /** Component responsible for reading and writing persisted tasks. */
+    private final Storage storage;
+
     /** Startup loading failure, if the persisted data could not be read. */
     private KiaException loadingError;
 
     /** Creates the application entry-point object. */
     public Kia() {
+        storage = new Storage(TASK_FILE);
         tasks = new ArrayList<>();
         try {
-            loadTasks(tasks);
+            tasks.addAll(storage.load());
         } catch (KiaException e) {
             loadingError = e;
         }
@@ -120,7 +122,7 @@ public class Kia {
             int taskNumber = parseTaskNumber(command, "delete ", tasks.size());
             Task removedTask = tasks.remove(taskNumber - 1);
             try {
-                saveTasks(tasks);
+                storage.save(tasks);
             } catch (KiaException e) {
                 tasks.add(taskNumber - 1, removedTask);
                 throw e;
@@ -132,7 +134,7 @@ public class Kia {
             TaskStatus previousStatus = task.getStatus();
             task.markAsDone();
             try {
-                saveTasks(tasks);
+                storage.save(tasks);
             } catch (KiaException e) {
                 task.setStatus(previousStatus);
                 throw e;
@@ -144,7 +146,7 @@ public class Kia {
             TaskStatus previousStatus = task.getStatus();
             task.markAsUndone();
             try {
-                saveTasks(tasks);
+                storage.save(tasks);
             } catch (KiaException e) {
                 task.setStatus(previousStatus);
                 throw e;
@@ -154,7 +156,7 @@ public class Kia {
             Task newTask = createTask(command);
             tasks.add(newTask);
             try {
-                saveTasks(tasks);
+                storage.save(tasks);
             } catch (KiaException e) {
                 tasks.remove(tasks.size() - 1);
                 throw e;
@@ -293,109 +295,4 @@ public class Kia {
         }
     }
 
-    /**
-     * Writes the current task list to disk, creating its parent directory when needed.
-     *
-     * @param tasks tasks to persist
-     * @throws KiaException if the file cannot be written
-     */
-    private static void saveTasks(ArrayList<Task> tasks) throws KiaException {
-        try {
-            Path parent = TASK_FILE.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            ArrayList<String> records = new ArrayList<>();
-            for (Task task : tasks) {
-                records.add(task.toStorageString());
-            }
-            Files.write(TASK_FILE, records, StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.WRITE);
-        } catch (IOException | SecurityException e) {
-            throw new KiaException("Unable to save tasks to disk.");
-        }
-    }
-
-    /**
-     * Loads valid task records from disk. Missing files are treated as an empty list.
-     * Invalid individual records are skipped so one corrupt line does not hide valid tasks.
-     *
-     * @param tasks destination list
-     * @throws KiaException if the data file cannot be read
-     */
-    private static void loadTasks(ArrayList<Task> tasks) throws KiaException {
-        if (tasks == null) {
-            throw new KiaException("Unable to load tasks from disk.");
-        }
-        try {
-            if (Files.notExists(TASK_FILE)) {
-                return;
-            }
-            if (!Files.isRegularFile(TASK_FILE)) {
-                throw new KiaException("Unable to load tasks from disk.");
-            }
-
-            ArrayList<Task> loadedTasks = new ArrayList<>();
-            int lineNumber = 0;
-            for (String line : Files.readAllLines(TASK_FILE, StandardCharsets.UTF_8)) {
-                lineNumber++;
-                if (line.isBlank()) {
-                    continue;
-                }
-                try {
-                    loadedTasks.add(parseStoredTask(line));
-                } catch (KiaException e) {
-                    System.out.println("Hey!!! Skipping invalid task data on line " + lineNumber + ".");
-                }
-            }
-            tasks.addAll(loadedTasks);
-        } catch (IOException | SecurityException e) {
-            throw new KiaException("Unable to load tasks from disk.");
-        }
-    }
-
-    /** Parses one persisted task record. */
-    private static Task parseStoredTask(String line) throws KiaException {
-        if (line == null) {
-            throw new KiaException("A task record is incomplete.");
-        }
-        // A UTF-8 BOM can appear at the start of a file created by some editors.
-        if (!line.isEmpty() && line.charAt(0) == '\uFEFF') {
-            line = line.substring(1);
-        }
-        String[] fields = line.split("\\s*\\|\\s*", -1);
-        if (fields.length < 3) {
-            throw new KiaException("A task record is incomplete.");
-        }
-        String type = fields[0].trim();
-        String status = fields[1].trim();
-        String description = fields[2].trim();
-        if (!(status.equals("0") || status.equals("1"))) {
-            throw new KiaException("A task record has an invalid status.");
-        }
-        if (description.isEmpty()) {
-            throw new KiaException("A task record has an empty description.");
-        }
-
-        Task task;
-        if (type.equals("T") && fields.length == 3) {
-            task = new Todo(description);
-        } else if (type.equals("D") && fields.length == 4 && !fields[3].trim().isEmpty()) {
-            try {
-                task = new Deadline(description, LocalDate.parse(fields[3].trim()));
-            } catch (DateTimeParseException e) {
-                throw new KiaException("A deadline record has an invalid date.");
-            }
-        } else if (type.equals("E") && fields.length == 5
-                && !fields[3].trim().isEmpty() && !fields[4].trim().isEmpty()) {
-            task = new Event(description, fields[3].trim(), fields[4].trim());
-        } else {
-            throw new KiaException("A task record has an invalid format.");
-        }
-        if (status.equals("1")) {
-            task.markAsDone();
-        }
-        return task;
-    }
 }
