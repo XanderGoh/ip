@@ -169,6 +169,26 @@ public class Ui {
     }
 
     /**
+     * Prints confirmation that a task was updated.
+     *
+     * @param task the updated task
+     */
+    public void showTaskUpdated(Task task) {
+        output.println("Got it! I've updated this task:");
+        output.println("  " + task);
+    }
+
+    /**
+     * Prints that an update did not alter a task.
+     *
+     * @param task the unchanged task
+     */
+    public void showTaskUnchanged(Task task) {
+        output.println("Nothing changed. This task is already up to date:");
+        output.println("  " + task);
+    }
+
+    /**
      * Prints the task-count confirmation using the singular or plural form.
      *
      * @param taskCount the number of tasks currently stored
